@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vite + React + TS</title>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+
+        <script>
+            (async function () {
+                if (navigator.storage && navigator.storage.persisted) {
+                    if (!(await navigator.storage.persisted())) {
+                        const flag = await navigator.storage.persist();
+                        console.log(flag);
+
+                        if (navigator.storage.estimate)
+                            console.log(await navigator.storage.estimate());
+                    }
+                }
+            })();
+        </script>
+    </body>
+</html>

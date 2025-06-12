@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@layer base {
+    button,
+    input,
+    select,
+    textarea {
+        outline-offset: 4px;
+    }
+
+    .sticker-highlight {
+        animation: glow 1.5s 200ms;
+    }
+
+    @keyframes glow {
+        0% {
+            filter: brightness(0.9);
+        }
+        100% {
+            filter: brightness(1);
+        }
+    }
+}
+
+@layer components {
+    .Personal {
+        --category-bg: var(--color-green-100);
+        --category-text: var(--color-green-400);
+        --category-text-name: var(--color-green-600);
+        --category-bg-light: var(--color-green-50);
+        --category-bg-hover: var(--color-green-100);
+        --category-text-hover: var(--color-green-500);
+        --category-dots-hover: var(--color-green-400);
+    }
+    .Meeting {
+        --category-bg: var(--color-purple-100);
+        --category-text: var(--color-purple-400);
+        --category-text-name: var(--color-purple-600);
+        --category-bg-light: var(--color-purple-50);
+        --category-bg-hover: var(--color-purple-100);
+        --category-text-hover: var(--color-purple-500);
+        --category-dots-hover: var(--color-purple-400);
+    }
+    .Work {
+        --category-bg: var(--color-blue-100);
+        --category-text: var(--color-blue-400);
+        --category-text-name: var(--color-blue-600);
+        --category-bg-light: var(--color-blue-50);
+        --category-bg-hover: var(--color-blue-100);
+        --category-text-hover: var(--color-blue-500);
+        --category-dots-hover: var(--color-blue-400);
+    }
+    .Reminders {
+        --category-bg: var(--color-red-100);
+        --category-text: var(--color-red-400);
+        --category-text-name: var(--color-red-600);
+        --category-bg-light: var(--color-red-50);
+        --category-bg-hover: var(--color-red-100);
+        --category-text-hover: var(--color-red-500);
+        --category-dots-hover: var(--color-red-400);
+    }
+}
+
+@layer utilities {
+    dialog {
+        z-index: 100;
+    }
+    dialog[open]::backdrop {
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+    .scroller::-webkit-scrollbar {
+        width: 5px;
+    }
+    .scroller::-webkit-scrollbar-track {
+        background: color-mix(
+            in oklab,
+            var(--color-slate-100) 90%,
+            transparent
+        );
+    }
+    .scroller::-webkit-scrollbar-thumb {
+        background: #999;
+        border-radius: 2rem;
+    }
+    .scroller::-webkit-scrollbar-thumb:hover {
+        background: #777;
+    }
+}
