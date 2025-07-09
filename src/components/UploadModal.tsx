@@ -9,7 +9,7 @@ const UploadModal = ({
 }) => {
     const modalFileInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState("");
-    const [fileName, setFileName] = useState("");
+    // const [fileName, setFileName] = useState("");
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -24,11 +24,12 @@ const UploadModal = ({
             setError("File size should be less than 1MB");
             return;
         }
-
+        
         setIsOpen(false);
+        
         const fileData = new FormData();
         fileData.append("file", file);
-        console.log([...fileData.entries()]);
+        
 
         const headers = {
             // Authorization: `Bearer ${TOKEN}`,
@@ -42,15 +43,15 @@ const UploadModal = ({
         });
     }
 
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFileName(file.name);
-            setError("");
-        } else {
-            setFileName("");
-        }
-    }
+    // function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    //     const file = e.target.files?.[0];
+    //     if (file) {
+    //         setFileName(file.name);
+    //         setError("");
+    //     } else {
+    //         setFileName("");
+    //     }
+    // }
 
     function handleLabelKeyDown(e: React.KeyboardEvent<HTMLLabelElement>) {
         if (e.key === "Enter") {
@@ -68,10 +69,10 @@ const UploadModal = ({
                             htmlFor="dropzone-file"
                             tabIndex={0}
                             onKeyDown={handleLabelKeyDown}
-                            className="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                            className="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-red-300 bg-red-100 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                         >
                             <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                                <svg
+                                {/* <svg
                                     className="mb-4 h-8 w-8 text-gray-500"
                                     aria-hidden="true"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -85,32 +86,34 @@ const UploadModal = ({
                                         strokeWidth="2"
                                         d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
                                     />
-                                </svg>
+                                </svg> */}
+                                <h3 className="text-red-400 font-medium mb-4">Oops!!</h3>
                                 <p className="mb-2 text-sm text-gray-500">
-                                    <span className="font-semibold">
+                                    This feature is not implemented yet
+                                    {/* <span className="font-semibold">
                                         Click to upload
                                     </span>{" "}
-                                    or drag and drop
+                                    or drag and drop */}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                     ICS file (MAX. 1MB)
                                 </p>
                             </div>
-                            <input
+                      `      {/* <input
                                 ref={modalFileInputRef}
                                 id="dropzone-file"
                                 type="file"
                                 className="hidden"
                                 accept=".ics"
                                 onChange={handleFileChange}
-                            />
+                            />` */}
                         </label>
                     </div>
-                    {fileName && (
+                    {/* {fileName && (
                         <p className="text-sm text-gray-600">
                             Selected file: {fileName}
                         </p>
-                    )}
+                    )} */}
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <div className="flex justify-end space-x-2">
                         <button

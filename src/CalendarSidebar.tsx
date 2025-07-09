@@ -69,7 +69,7 @@ export default function CalendarSidebar({ sideViewIsOpen }: CalendarSidebarProps
                     </div>
                 </div>
 
-                <h2 className="px-1 pt-4 text-base font-semibold text-slate-700">Upcoming events</h2>
+                <h2 className="px-1 pt-4 text-base font-semibold text-slate-700">Events</h2>
                 <ol
                     className={`l mt-2 flex h-[calc(100vh-135px)] min-w-[calc(320px-2rem)] flex-col gap-1 overflow-x-auto px-1 text-sm leading-6 text-gray-500`}
                 >
@@ -88,6 +88,17 @@ function EventCard({ event }: { event: CalendarEvent }) {
     const [MenuIsOpen, setMenuIsOpen] = useState(false);
     const { openModal } = useEventModal();
     const { setCurrentDay } = useCalendar();
+
+    const store = useEventStore()  
+    async function handleDelete(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Delete event:", event.id);
+        
+        const confirmed = window.confirm("Are you sure you want to delete this event?");
+        if (!confirmed) return false;
+        store.deleteEvent(event.id);
+    }
     return (
         <li
             className="mt-1 h-max rounded"
@@ -136,7 +147,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
             >
                 <div className="flex justify-between">
                     <time dateTime={format(event.startDateTime, "yyyy-mm-dd")}>
-                        {format(event.startDateTime, "EEE, MMM dd")}
+                        {format(event.startDateTime, "EEE, MMM dd y")}
                     </time>
                     <div className="relative">
                         <button
@@ -173,10 +184,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
                             <li>
                                 <button
                                     className="w-full rounded-md px-1 text-left hover:bg-slate-100 focus:bg-slate-100"
-                                    onClick={() => {
-                                        // deleteEvent({ id: event.id });
-                                        // fetchEvents();
-                                    }}
+                                    onClick={(e) => handleDelete(e)}
                                     onBlur={() => setMenuIsOpen(false)}
                                 >
                                     Delete

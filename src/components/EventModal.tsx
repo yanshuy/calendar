@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useClickOutside } from "../hooks/useClickOutside";
 import type { CalendarEvent } from "../utils/types";
 import { add, format } from "date-fns";
+import { useEventStore } from "../context/useEventStore";
 
 export default function EventModal({
     event,
@@ -26,6 +27,8 @@ export default function EventModal({
     const [category, setCategory] = useState("");
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const store = useEventStore()
 
     // Reset or populate fields when modal opens/changes
     useEffect(() => {
@@ -106,11 +109,11 @@ export default function EventModal({
             }
 
             if (
-                (new Date(modalStartInputRef.current.value).getTime() -
-                    new Date(modalEndInputRef.current.value).getTime()) /
-                    (1000 * 60) <=
+                (new Date(modalEndInputRef.current.value).getTime() -
+                    new Date(modalStartInputRef.current.value).getTime()) /
+                    (1000 * 60) <
                 15
-            ) {
+            ) { 
                 newErrors.endDateTime = "differnce between start time and end time should be atleast 15mins";
             }
         }
@@ -122,26 +125,23 @@ export default function EventModal({
         }
 
         // Prepare event data
-        const eventData = {
+        const eventData:CalendarEvent = {
             id: event?.id ?? "", // Use existing ID if updating
-            name: modalTitleInputRef.current?.value ?? "",
-            startDateTime: modalStartInputRef.current?.value ?? "",
-            endDateTime: modalEndInputRef.current?.value ?? "",
-            description: modalDescriptionInputRef.current?.value ?? "",
-            category: modalCategoryInputRef.current?.value ?? "",
+            name: modalTitleInputRef.current!.value,
+            startDateTime: modalStartInputRef.current!.value,
+            endDateTime: modalEndInputRef.current!.value,
+            description: modalDescriptionInputRef.current?.value,
+            category: modalCategoryInputRef.current?.value == "" ? "Personal": modalCategoryInputRef.current!.value,
+            eventStatus: "future"
         };
 
-        try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 500));
-
-            // Uncomment and implement these when ready
-            // if (event?.id) {
-            //     await updateEvent(eventData);
-            // } else {
-            //     await addEvent(eventData);
-            // }
-
+        try {            
+            if (eventData.id != "") {
+                await store.updateEvent(eventData);
+            } else {
+                eventData.id = crypto.randomUUID(); 
+                await store.addEvents(eventData);
+            }
             closeModal();
         } catch (err) {
             setErrors({ general: "Failed to save event. Please try again." });

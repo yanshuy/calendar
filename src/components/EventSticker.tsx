@@ -15,20 +15,8 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
         1000 /
         60;
 
-    const height = ((new Date(event.endDateTime).getTime() - new Date(event.startDateTime).getTime()) * 2) / 1000 / 60;
-
+    const height = ((new Date(event.endDateTime).getTime() - new Date(event.startDateTime).getTime()) * 2) / (1000 * 60);
     const scheduledTime = `${format(event.startDateTime, "h:mm")} to ${format(event.endDateTime, "h:mm")}`;
-
-    async function handleDelete(e: React.MouseEvent<HTMLDivElement>) {
-        e.preventDefault();
-
-        const cancel = confirm(`Sure, you want to cancel your meeting with ${event?.name}?`);
-        if (!cancel) return;
-        const deleted = await deleteEvent({ id: event.id });
-        console.log(deleted);
-
-        return deleted;
-    }
 
     return (
         <>
@@ -62,7 +50,7 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
                         ${event.category} ${height > 45 ? "p-2" : ""}
                     `}
                 >
-                    <p className={`text-(--category-text-name) ${height < 60 ? "text-sm" : "truncate"}`}>
+                    <p className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}>
                         {event.name}
                     </p>
                     {height >= 60 && (

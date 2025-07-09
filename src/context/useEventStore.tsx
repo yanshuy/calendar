@@ -23,40 +23,7 @@ export const EventStoreProvider = ({ children }: { children: React.ReactNode }) 
 
     const { getAll, addItem, updateItem, deleteItem } = useIndexedDB("calendar-events");
 
-    const refreshEvents = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const all = await getAll();
-            setEvents(all);
-            return all;
-        } catch (err) {
-            const e = err instanceof Error ? err : new Error(String(err));
-            setError(e);
-            return [];
-        } finally {
-            addEvents(dummyEvents);
-            setIsLoading(false);
-        }
-    }, [getAll]);
-
-    useEffect(() => {
-        const init = async () => {
-            try {
-                await initIDB();
-                await refreshEvents();
-            } catch (err) {
-                const e = err instanceof Error ? err : new Error(String(err));
-                setError(e);
-                setIsLoading(false);
-            }
-        };
-        init();
-    }, [refreshEvents]);
-
-    const getEvent = useCallback((id: string) => events.find((e) => e.id === id), [events]);
-
-    const addEvents = useCallback(
+     const addEvents = useCallback(
         async (event: CalendarEvent | CalendarEvent[]) => {
             setError(null);
             try {
@@ -77,6 +44,39 @@ export const EventStoreProvider = ({ children }: { children: React.ReactNode }) 
         },
         [addItem]
     );
+    
+    const refreshEvents = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const all = await getAll();
+            setEvents(all);
+            return all;
+        } catch (err) {
+            const e = err instanceof Error ? err : new Error(String(err));
+            setError(e);
+            return [];
+        } finally {
+            addEvents(dummyEvents);
+            setIsLoading(false);
+        }
+    }, [getAll, addEvents]);
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                await initIDB();
+                await refreshEvents();
+            } catch (err) {
+                const e = err instanceof Error ? err : new Error(String(err));
+                setError(e);
+                setIsLoading(false);
+            }
+        };
+        init();
+    }, [refreshEvents]);
+
+    const getEvent = useCallback((id: string) => events.find((e) => e.id === id), [events]);
 
     const updateEvent = useCallback(
         async (event: CalendarEvent) => {

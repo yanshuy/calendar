@@ -4,8 +4,8 @@ export type CalendarEvent = {
     startDateTime: string;
     endDateTime: string;
     description?: string;
-    eventStatus: "past" | "ongoing" | "future";
-    category: "Work" | "Personal" | "Reminders" | "Meeting";
+    eventStatus: "past" | "ongoing" | "future" | string;
+    category: "Work" | "Personal" | "Reminders" | "Meeting" | string;
 };
 
 export const dummyEvents: CalendarEvent[] = [

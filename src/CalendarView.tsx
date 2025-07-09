@@ -39,7 +39,6 @@ const CalendarView = () => {
                 setCurrentDay(eventDate);
                 setTimeout(() => {
                     element = document.getElementById(eventId);
-                    console.log(element);
 
                     element?.scrollIntoView({ behavior: "smooth" });
                     if (element) observer.observe(element);
