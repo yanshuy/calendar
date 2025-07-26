@@ -2,8 +2,8 @@ import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 import { CalendarEvent } from "./utils/types";
 import { useEventModal } from "./context/useEventModal";
-import { useCalendar } from "./context/useCalendar";
 import { useEventStore } from "./context/useEventStore";
+import { useRouter } from "./router/useRouter";
 
 type CalendarSidebarProps = {
     sideViewIsOpen: boolean;
@@ -26,9 +26,8 @@ export default function CalendarSidebar({ sideViewIsOpen }: CalendarSidebarProps
 
     return (
         <aside
-            className={`pt-12 overflow-hidden md:mt-0 transition-all ${
-                sideViewIsOpen ? "min-w-80 max-w-80" : "min-w-0 max-w-0"
-            }`}
+            className={`pt-12 overflow-hidden md:mt-0 transition-all ${sideViewIsOpen ? "min-w-80 max-w-80" : "min-w-0 max-w-0"
+                }`}
         >
             <div
                 style={{
@@ -87,18 +86,19 @@ export default function CalendarSidebar({ sideViewIsOpen }: CalendarSidebarProps
 function EventCard({ event }: { event: CalendarEvent }) {
     const [MenuIsOpen, setMenuIsOpen] = useState(false);
     const { openModal } = useEventModal();
-    const { setCurrentDay } = useCalendar();
+    const { setCurrentDate } = useRouter();
 
-    const store = useEventStore()  
+    const store = useEventStore()
     async function handleDelete(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         e.preventDefault();
         e.stopPropagation();
         console.log("Delete event:", event.id);
-        
+
         const confirmed = window.confirm("Are you sure you want to delete this event?");
         if (!confirmed) return false;
         store.deleteEvent(event.id);
     }
+
     return (
         <li
             className="mt-1 h-max rounded"
@@ -127,78 +127,71 @@ function EventCard({ event }: { event: CalendarEvent }) {
     .category:focus-within .menu > .dots {
         background-color: var(--category-dots-hover);
     } */}
-            <a
-                href={`#${event.id}`}
-                className={`block p-3 ${event.category} group focus-within:bg-(--category-bg-hover) focus-within:text-(--category-text-hover) hover:bg-(--category-bg-hover) hover:text-(--category-text-hover) bg-(--category-bg-light) text-(--category-text) transition-colors duration-200 h-full w-full rounded-xl focus:outline-none focus:focus-visible:ring focus:ring-slate-900 focus:ring-offset-2`}
+            <div
+                data-category={event.category}
+                className="block p-3 relative group focus-within:bg-(--category-bg-hover) focus-within:text-(--category-text-hover) hover:bg-(--category-bg-hover) hover:text-(--category-text-hover) bg-(--category-bg-light) text-(--category-text) transition-colors duration-200 h-full w-full rounded-xl focus:outline-none focus:focus-visible:ring focus:ring-slate-900 focus:ring-offset-2"
                 onClick={(e) => {
                     e.preventDefault();
-                    setCurrentDay(parseISO(event.startDateTime));
-
-                    // Force hash change by temporarily removing it
-                    if (window.location.hash === `#${event.id}`) {
-                        window.location.hash = "";
-                        setTimeout(() => {
-                            window.location.hash = event.id;
-                        }, 0);
-                    } else {
-                        window.location.hash = event.id;
-                    }
+                    setCurrentDate(parseISO(event.startDateTime));
+                    window.location.hash = "";
+                    window.location.hash = event.id;
+                }}
+                onContextMenu={(e) => {
+                    e.preventDefault()
+                    setMenuIsOpen(true)
                 }}
             >
-                <div className="flex justify-between">
-                    <time dateTime={format(event.startDateTime, "yyyy-mm-dd")}>
-                        {format(event.startDateTime, "EEE, MMM dd y")}
-                    </time>
-                    <div className="relative">
-                        <button
-                            className="menu flex h-5 -translate-y-1 translate-x-1 items-center gap-[2.5px] px-1"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setMenuIsOpen((prev) => !prev);
-                            }}
-                        >
-                            {[...Array(3)].map((_, index) => (
-                                <span
-                                    key={index}
-                                    className="group-hover:bg-(--category-dots-hover) group-focus-within:bg-(--category-dots-hover) size-1 rounded-[100%]"
-                                ></span>
-                            ))}
-                        </button>
-                        <ol
-                            className={`${
-                                MenuIsOpen ? "absolute" : "hidden"
-                            } right-0 top-4 grid w-32 rounded-lg bg-white px-1 py-[0.3rem] text-slate-700 shadow-md`}
-                        >
-                            <li>
-                                <button
-                                    className="w-full rounded-md px-1 text-left hover:bg-slate-100 focus:bg-slate-100 disabled:opacity-50"
-                                    disabled={new Date(event.startDateTime) < new Date()}
-                                    onClick={() => {
-                                        openModal(event);
-                                    }}
-                                >
-                                    Edit
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    className="w-full rounded-md px-1 text-left hover:bg-slate-100 focus:bg-slate-100"
-                                    onClick={(e) => handleDelete(e)}
-                                    onBlur={() => setMenuIsOpen(false)}
-                                >
-                                    Delete
-                                </button>
-                            </li>
-                        </ol>
-                    </div>
-                </div>
+                <a href={"#" + event.id} className="before:inset-0 before:absolute"></a>
+                <time dateTime={format(event.startDateTime, "yyyy-mm-dd")}>
+                    {format(event.startDateTime, "EEE, MMM dd y")}
+                </time>
                 <p className="text-(--category-text-name)">{event.name}</p>
                 <span className="mt-0.5">
                     <time dateTime={event.startDateTime}>{format(event.startDateTime, "h:mm a")}</time> -{" "}
                     <time dateTime={event.endDateTime}>{format(event.endDateTime, "h:mm a")}</time>
                 </span>
-            </a>
+                <div className="absolute top-3 right-3">
+                    <button
+                        className="menu flex h-5 -translate-y-1 translate-x-1 items-center gap-[2.5px] px-1 hover:cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuIsOpen((prev) => !prev);
+                        }}
+                    >
+                        {[...Array(3)].map((_, index) => (
+                            <span
+                                key={index}
+                                className="group-hover:bg-(--category-dots-hover) group-focus-within:bg-(--category-dots-hover) size-1 rounded-[100%]"
+                            ></span>
+                        ))}
+                    </button>
+                    <ol
+                        className={`${MenuIsOpen ? "absolute" : "hidden"
+                            } right-0 top-4 grid w-32 rounded-lg bg-white px-1 py-[0.3rem] text-slate-700 shadow-md`}
+                    >
+                        <li>
+                            <button
+                                className="w-full rounded-md px-1 text-left hover:bg-slate-100 focus:bg-slate-100 disabled:opacity-50"
+                                disabled={new Date(event.startDateTime) < new Date()}
+                                onClick={() => {
+                                    openModal(event);
+                                }}
+                            >
+                                Edit
+                            </button>
+                        </li>
+                        <li>
+                            <button
+                                className="w-full rounded-md px-1 text-left hover:bg-slate-100 focus:bg-slate-100"
+                                onClick={(e) => handleDelete(e)}
+                                onBlur={() => setMenuIsOpen(false)}
+                            >
+                                Delete
+                            </button>
+                        </li>
+                    </ol>
+                </div>
+            </div>
         </li>
     );
 }

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @layer base {
+
     button,
     input,
     select,
@@ -16,6 +17,7 @@
         0% {
             filter: brightness(0.9);
         }
+
         100% {
             filter: brightness(1);
         }
@@ -23,7 +25,7 @@
 }
 
 @layer components {
-    .Personal {
+    [data-category="Personal"] {
         --category-bg: var(--color-green-100);
         --category-text: var(--color-green-400);
         --category-text-name: var(--color-green-600);
@@ -32,7 +34,8 @@
         --category-text-hover: var(--color-green-500);
         --category-dots-hover: var(--color-green-400);
     }
-    .Meeting {
+
+    [data-category="Meeting"] {
         --category-bg: var(--color-purple-100);
         --category-text: var(--color-purple-400);
         --category-text-name: var(--color-purple-600);
@@ -41,7 +44,8 @@
         --category-text-hover: var(--color-purple-500);
         --category-dots-hover: var(--color-purple-400);
     }
-    .Work {
+
+    [data-category="Work"] {
         --category-bg: var(--color-blue-100);
         --category-text: var(--color-blue-400);
         --category-text-name: var(--color-blue-600);
@@ -50,7 +54,8 @@
         --category-text-hover: var(--color-blue-500);
         --category-dots-hover: var(--color-blue-400);
     }
-    .Reminders {
+
+    [data-category="Reminders"] {
         --category-bg: var(--color-red-100);
         --category-text: var(--color-red-400);
         --category-text-name: var(--color-red-600);
@@ -61,27 +66,59 @@
     }
 }
 
+
 @layer utilities {
     dialog {
-        z-index: 100;
+        transition-behavior: allow-discrete;
+        transition-duration: 100ms;
+        transition-property: overlay translate display;
+        transition-timing-function: ease-in;
+        translate: 0 5%;
     }
-    dialog[open]::backdrop {
+
+
+    dialog::backdrop {
+        transition-behavior: allow-discrete;
+        transition-duration: 200ms;
+        transition-property: overlay background-color display;
+        background-color: rgba(0, 0, 0, 0);
+    }
+
+    dialog:open::backdrop {
         background-color: rgba(0, 0, 0, 0.4);
     }
+
+    @starting-style {
+        dialog:open::backdrop {
+            background-color: rgba(0, 0, 0, 0);
+        }
+    }
+
+    dialog:open {
+        translate: 0 0;
+        transition-duration: 200ms;
+        transition-timing-function: ease;
+
+        @starting-style {
+            translate: 0 5%;
+        }
+    }
+
     .scroller::-webkit-scrollbar {
         width: 5px;
     }
+
     .scroller::-webkit-scrollbar-track {
-        background: color-mix(
-            in oklab,
-            var(--color-slate-100) 90%,
-            transparent
-        );
+        background: color-mix(in oklab,
+                var(--color-slate-100) 90%,
+                transparent);
     }
+
     .scroller::-webkit-scrollbar-thumb {
         background: #999;
         border-radius: 2rem;
     }
+
     .scroller::-webkit-scrollbar-thumb:hover {
         background: #777;
     }

@@ -4,18 +4,18 @@ import "./index.css";
 import CalendarView from "./CalendarView.tsx";
 import { EventModalProvider } from "./context/useEventModal.tsx";
 import { ErrorBoundary } from "./utils/ErrorBoundry.tsx";
-import { CalendarProvider } from "./context/useCalendar.tsx";
 import { EventStoreProvider } from "./context/useEventStore.tsx";
+import { RouterProvider } from "./router/useRouter.tsx";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ErrorBoundary>
             <EventStoreProvider>
-                <CalendarProvider>
+                <RouterProvider>
                     <EventModalProvider>
                         <CalendarView />
                     </EventModalProvider>
-                </CalendarProvider>
+                </RouterProvider>
             </EventStoreProvider>
         </ErrorBoundary>
     </StrictMode>

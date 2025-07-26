@@ -14,8 +14,8 @@ import {
     startOfISOWeek,
 } from "date-fns";
 import { useState } from "react";
-import { useCalendar } from "./context/useCalendar";
 import { useEventStore } from "./context/useEventStore";
+import { useRouter } from "./router/useRouter";
 
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 
@@ -24,8 +24,8 @@ function classNames(...classes: (string | boolean)[]) {
 }
 
 export default function Calendar() {
-    const { currentDay, setCurrentDay } = useCalendar();
-    const [currentMonth, setCurrentMonth] = useState(format(currentDay, "MMM-yyyy"));
+    const { currentDate, setCurrentDate } = useRouter();
+    const [currentMonth, setCurrentMonth] = useState(format(currentDate, "MMM-yyyy"));
     const currentMonthFirstDay = parse(currentMonth, "MMM-yyyy", new Date());
 
     const days = eachDayOfInterval({
@@ -117,23 +117,23 @@ export default function Calendar() {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setCurrentDay(day);
+                                            setCurrentDate(day);
                                         }}
                                         className={classNames(
-                                            isEqual(day, currentDay) && "text-white",
-                                            !isEqual(day, currentDay) && isToday(day) && "text-blue-500",
-                                            !isEqual(day, currentDay) &&
-                                                !isToday(day) &&
-                                                isSameMonth(day, currentMonthFirstDay) &&
-                                                "text-slate-900",
-                                            !isEqual(day, currentDay) &&
-                                                !isToday(day) &&
-                                                !isSameMonth(day, currentMonthFirstDay) &&
-                                                "text-slate-400",
-                                            isEqual(day, currentDay) && isToday(day) && "bg-blue-500",
-                                            isEqual(day, currentDay) && !isToday(day) && "bg-gray-900",
-                                            !isEqual(day, currentDay) && "hover:bg-gray-200",
-                                            (isEqual(day, currentDay) || isToday(day)) && "font-semibold",
+                                            isEqual(day, currentDate) && "text-white",
+                                            !isEqual(day, currentDate) && isToday(day) && "text-blue-500",
+                                            !isEqual(day, currentDate) &&
+                                            !isToday(day) &&
+                                            isSameMonth(day, currentMonthFirstDay) &&
+                                            "text-slate-900",
+                                            !isEqual(day, currentDate) &&
+                                            !isToday(day) &&
+                                            !isSameMonth(day, currentMonthFirstDay) &&
+                                            "text-slate-400",
+                                            isEqual(day, currentDate) && isToday(day) && "bg-blue-500",
+                                            isEqual(day, currentDate) && !isToday(day) && "bg-gray-900",
+                                            !isEqual(day, currentDate) && "hover:bg-gray-200",
+                                            (isEqual(day, currentDate) || isToday(day)) && "font-semibold",
                                             "mx-auto flex h-8 w-8 items-center justify-center rounded-full font-medium"
                                         )}
                                     >

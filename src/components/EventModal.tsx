@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useClickOutside } from "../hooks/useClickOutside";
 import type { CalendarEvent } from "../utils/types";
 import { add, format } from "date-fns";
@@ -28,10 +28,7 @@ export default function EventModal({
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const store = useEventStore()
-
-    // Reset or populate fields when modal opens/changes
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (isOpen) {
             if (modalTitleInputRef.current) modalTitleInputRef.current.value = event.name || "";
             if (modalDescriptionInputRef.current) modalDescriptionInputRef.current.value = event.description || "";
@@ -48,28 +45,30 @@ export default function EventModal({
             if (modalEndInputRef.current && event.endDateTime) {
                 modalEndInputRef.current.value = modalStartInputRef.current
                     ? format(
-                          add(new Date(modalStartInputRef.current?.value), {
-                              minutes: 15,
-                          }),
-                          "yyyy-MM-dd'T'HH:mm"
-                      )
+                        add(new Date(modalStartInputRef.current?.value), {
+                            minutes: 15,
+                        }),
+                        "yyyy-MM-dd'T'HH:mm"
+                    )
                     : event.endDateTime.slice(0, 16);
 
                 modalEndInputRef.current.min = modalStartInputRef.current
                     ? add(new Date(modalStartInputRef.current?.min), {
-                          minutes: 15,
-                      })
-                          .toISOString()
-                          .slice(0, 16)
+                        minutes: 15,
+                    })
+                        .toISOString()
+                        .slice(0, 16)
                     : event.endDateTime.slice(0, 16);
             }
 
             if (modalCategoryInputRef.current) modalCategoryInputRef.current.value = event.category || "";
+        } else {
             setCategory(event.category || "");
             setErrors({});
         }
     }, [isOpen, event]);
 
+    const store = useEventStore()
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (isEventPast) return;
@@ -111,9 +110,9 @@ export default function EventModal({
             if (
                 (new Date(modalEndInputRef.current.value).getTime() -
                     new Date(modalStartInputRef.current.value).getTime()) /
-                    (1000 * 60) <
+                (1000 * 60) <
                 15
-            ) { 
+            ) {
                 newErrors.endDateTime = "differnce between start time and end time should be atleast 15mins";
             }
         }
@@ -125,21 +124,21 @@ export default function EventModal({
         }
 
         // Prepare event data
-        const eventData:CalendarEvent = {
+        const eventData: CalendarEvent = {
             id: event?.id ?? "", // Use existing ID if updating
             name: modalTitleInputRef.current!.value,
             startDateTime: modalStartInputRef.current!.value,
             endDateTime: modalEndInputRef.current!.value,
             description: modalDescriptionInputRef.current?.value,
-            category: modalCategoryInputRef.current?.value == "" ? "Personal": modalCategoryInputRef.current!.value,
+            category: modalCategoryInputRef.current?.value == "" ? "Personal" : modalCategoryInputRef.current!.value,
             eventStatus: "future"
         };
 
-        try {            
+        try {
             if (eventData.id != "") {
                 await store.updateEvent(eventData);
             } else {
-                eventData.id = crypto.randomUUID(); 
+                eventData.id = crypto.randomUUID();
                 await store.addEvents(eventData);
             }
             closeModal();
@@ -151,8 +150,10 @@ export default function EventModal({
         }
     }
 
-    const isEventPast =
-        event.endDateTime && event.endDateTime !== "" ? new Date(event.endDateTime) < new Date() : false;
+    const isEventPast = (() => {
+        if (!event.endDateTime) return false
+        return event.endDateTime !== "" ? new Date(event.endDateTime) < new Date() : false;
+    })()
 
     return (
         <dialog
@@ -201,9 +202,8 @@ export default function EventModal({
                             ref={modalTitleInputRef}
                             type="text"
                             disabled={isEventPast}
-                            className={`w-full rounded-md border ${
-                                errors.name ? "border-red-500 bg-red-50" : "border-gray-300"
-                            } 
+                            className={`w-full rounded-md border ${errors.name ? "border-red-500 bg-red-50" : "border-gray-300"
+                                } 
                             px-3 py-2  focus:border-slate-500 focus:ring-1 focus:ring-slate-500 
                             disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                             transition-colors`}
@@ -224,17 +224,15 @@ export default function EventModal({
                                     ref={modalStartInputRef}
                                     type="datetime-local"
                                     disabled={isEventPast}
-                                    className={`w-full rounded-md border ${
-                                        errors.startDateTime ? "border-red-500 bg-red-50" : "border-gray-300"
-                                    } 
+                                    className={`w-full rounded-md border ${errors.startDateTime ? "border-red-500 bg-red-50" : "border-gray-300"
+                                        } 
                                     py-2 pl-10 pr-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                                     disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                                     transition-colors`}
                                 />
                                 <ClockIconStart
-                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${
-                                        isEventPast ? "text-gray-400/50" : "text-gray-400"
-                                    }`}
+                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${isEventPast ? "text-gray-400/50" : "text-gray-400"
+                                        }`}
                                     size={20}
                                 />
                             </div>
@@ -253,17 +251,15 @@ export default function EventModal({
                                     ref={modalEndInputRef}
                                     type="datetime-local"
                                     disabled={isEventPast}
-                                    className={`w-full rounded-md border ${
-                                        errors.endDateTime ? "border-red-500 bg-red-50" : "border-gray-300"
-                                    } 
+                                    className={`w-full rounded-md border ${errors.endDateTime ? "border-red-500 bg-red-50" : "border-gray-300"
+                                        } 
                                     py-2 pl-10 pr-3  focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                                     disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                                     transition-colors`}
                                 />
                                 <ClockIconEnd
-                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${
-                                        isEventPast ? "text-gray-400/50" : "text-gray-400"
-                                    }`}
+                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${isEventPast ? "text-gray-400/50" : "text-gray-400"
+                                        }`}
                                     size={20}
                                 />
                             </div>
@@ -281,9 +277,8 @@ export default function EventModal({
                             value={category}
                             disabled={isEventPast}
                             onChange={(e) => setCategory(e.target.value)}
-                            className={`w-full rounded-md border ${
-                                errors.category ? "border-red-500 bg-red-50" : "border-gray-300"
-                            } 
+                            className={`w-full rounded-md border ${errors.category ? "border-red-500 bg-red-50" : "border-gray-300"
+                                } 
                             px-3 py-2  focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                             disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                             transition-colors appearance-none bg-no-repeat bg-[right_0.5rem_center]`}
@@ -309,9 +304,8 @@ export default function EventModal({
                         <textarea
                             ref={modalDescriptionInputRef}
                             id="description"
-                            className={`w-full rounded-md border ${
-                                errors.description ? "border-red-500 bg-red-50" : "border-gray-300"
-                            } 
+                            className={`w-full rounded-md border ${errors.description ? "border-red-500 bg-red-50" : "border-gray-300"
+                                } 
                             px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                             disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                             transition-colors field-sizing-content resize-none min-h-[calc(2.1lh+1rem)]`}

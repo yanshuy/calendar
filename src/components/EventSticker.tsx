@@ -31,23 +31,16 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
                 key={event.startDateTime}
                 data-time={event.startDateTime}
                 className="absolute w-full bg-transparent p-[0.15rem] sticker"
-                // onContextMenu={async (e) => {
-                //     const deleted = await handleDelete(e);
-                //     if (!deleted) return;
-                //     console.log(deleted);
-                //     const fetchedEvent = await fetchEvents();
-                //     console.log(fetchedEvent);
-                //     setEvents(fetchedEvent);
-                // }}
             >
                 <div
+                    data-category={event.category}
                     className={`
                         pointer-events-none flex h-full w-full flex-col gap-0 rounded-lg px-2
                         transition-colors duration-200
                         bg-(--category-bg) text-(--category-text)
                         hover:bg-(--category-bg-hover) hover:text-(--category-text-hover)
                         focus-within:bg-(--category-bg-hover) focus-within:text-(--category-text-hover)
-                        ${event.category} ${height > 45 ? "p-2" : ""}
+                        ${height > 45 ? "p-2" : ""}
                     `}
                 >
                     <p className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}>

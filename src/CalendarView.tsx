@@ -8,14 +8,14 @@ import UploadModal from "./components/UploadModal";
 import { useEventModal } from "./context/useEventModal";
 import { useClickOutside } from "./hooks/useClickOutside";
 import { useDialog } from "./hooks/useDialog";
-import { useCalendar } from "./context/useCalendar";
 import { observer } from "./utils/intersectionObserver";
 import { useEventStore } from "./context/useEventStore";
+import { useRouter } from "./router/useRouter";
 
 const CalendarView = () => {
     const [view, setView] = useState("Week");
 
-    const { currentDay, setCurrentDay, currentWeekDays, previousDay, previousWeek, nextDay, nextWeek } = useCalendar();
+    const { currentDate, setCurrentDate, currentWeekDays, previousDay, previousWeek, nextDay, nextWeek } = useRouter();
 
     const [sideViewIsOpen, setSideViewIsOpen] = useState(true);
 
@@ -36,7 +36,7 @@ const CalendarView = () => {
             const event = getEvent(eventId);
             if (event) {
                 const eventDate = new Date(event.startDateTime);
-                setCurrentDay(eventDate);
+                setCurrentDate(eventDate);
                 setTimeout(() => {
                     element = document.getElementById(eventId);
 
@@ -78,7 +78,7 @@ const CalendarView = () => {
                             title="Jump back to today"
                             className="text-md flex items-center gap-2 fill-slate-500 text-slate-500 hover:fill-slate-900 hover:text-slate-900"
                             onClick={() => {
-                                setCurrentDay(startOfToday());
+                                setCurrentDate(startOfToday());
                                 scrollToCurrentHour();
                             }}
                         >
@@ -145,9 +145,8 @@ const CalendarView = () => {
                         {/* view tab */}
                         <div className="flex min-w-48 rounded-lg border border-slate-200 bg-slate-50 p-[1px]">
                             <button
-                                className={`${
-                                    view == "Day" ? "bg-white border-slate-200" : "border-transparent"
-                                } basis-full rounded-[7px] border p-1 font-semibold text-slate-700`}
+                                className={`${view == "Day" ? "bg-white border-slate-200" : "border-transparent"
+                                    } basis-full rounded-[7px] border p-1 font-semibold text-slate-700`}
                                 onClick={() => {
                                     setView("Day");
                                 }}
@@ -155,9 +154,8 @@ const CalendarView = () => {
                                 Day
                             </button>
                             <button
-                                className={`${
-                                    view == "Week" ? "bg-white border-slate-200" : "border-transparent"
-                                } basis-full rounded-[7px] translate-x-[1px] border p-1 font-semibold text-slate-700`}
+                                className={`${view == "Week" ? "bg-white border-slate-200" : "border-transparent"
+                                    } basis-full rounded-[7px] translate-x-[1px] border p-1 font-semibold text-slate-700`}
                                 onClick={() => {
                                     setView("Week");
                                 }}
@@ -171,9 +169,8 @@ const CalendarView = () => {
                             <div className="flex items-center gap-3">
                                 <UploadModalButton />
                                 <button
-                                    className={`hover:stroke-slate-800 ${
-                                        sideViewIsOpen ? "fill-slate-800" : "fill-slate-400"
-                                    } transition-colors `}
+                                    className={`hover:stroke-slate-800 ${sideViewIsOpen ? "fill-slate-800" : "fill-slate-400"
+                                        } transition-colors `}
                                     onClick={() => setSideViewIsOpen((prev) => !prev)}
                                 >
                                     <span className="sr-only">Search</span>
@@ -200,7 +197,7 @@ const CalendarView = () => {
                         </div>
                     </div>
                 </div>
-                <DaysView days={view == "Week" ? currentWeekDays : [currentDay]} currentHourRef={currentHourRef} />
+                <DaysView days={view == "Week" ? currentWeekDays() : [currentDate]} currentHourRef={currentHourRef} />
             </div>
             <CalendarSidebar sideViewIsOpen={sideViewIsOpen} />
         </div>
@@ -239,7 +236,7 @@ function AddEventButton() {
 
 function CalendarButton() {
     const [calendarIsOpen, setCalendarIsOpen] = useState(false);
-    const { currentMonth } = useCalendar();
+    const { currentWeekMonth } = useRouter();
 
     const calendarRef = useRef<HTMLDivElement>(null);
     useClickOutside(calendarRef, calendarIsOpen, () => setCalendarIsOpen(false));
@@ -251,7 +248,7 @@ function CalendarButton() {
                 onClick={() => setCalendarIsOpen((prev) => !prev)}
             >
                 <span className="sr-only">calendar</span>
-                <span className="text-md font-semibold text-slate-700 w-max">{currentMonth}</span>
+                <span className="text-md font-semibold text-slate-700 w-max">{currentWeekMonth()}</span>
                 <div className={`${calendarIsOpen && "rotate-180 transform"} size-5 transition-transform`}>
                     <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" role="img">
                         <path
@@ -274,9 +271,8 @@ function UploadModalButton() {
     return (
         <>
             <button
-                className={`hover:stroke-slate-800 stroke-slate-400 transition-colors ${
-                    uploadModalIsOpen ? "stroke-slate-800" : "stroke-slate-400"
-                }`}
+                className={`hover:stroke-slate-800 stroke-slate-400 transition-colors ${uploadModalIsOpen ? "stroke-slate-800" : "stroke-slate-400"
+                    }`}
                 title="import from ics"
                 onClick={() => {
                     setUploadModalIsOpen(true);

@@ -1,23 +1,20 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 
 export function useClickOutside(
     elementRef: React.RefObject<HTMLElement | HTMLDialogElement | null>,
     isOpen: boolean,
     onClose: () => void
 ) {
-    const handleClickOutside = useCallback(
-        (event: MouseEvent | TouchEvent) => {
-            if (!elementRef.current) return;
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+        if (!elementRef.current) return;
 
-            const target = event.target as Node;
-            const isDialogClick = target.nodeName === "DIALOG";
+        const target = event.target as Node;
+        const isDialogClick = target.nodeName == "DIALOG";
 
-            if (!elementRef.current.contains(target) || isDialogClick) {
-                onClose();
-            }
-        },
-        [elementRef, onClose]
-    );
+        if (!elementRef.current.contains(target) || isDialogClick) {
+            onClose();
+        }
+    }
 
     useEffect(() => {
         const events: Array<"mousedown" | "touchstart"> = [
@@ -36,7 +33,7 @@ export function useClickOutside(
                 document.removeEventListener(event, handleClickOutside);
             });
         };
-    }, [isOpen, handleClickOutside]);
+    }, [isOpen]);
 
     return elementRef;
 }
