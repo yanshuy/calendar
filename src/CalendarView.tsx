@@ -9,10 +9,18 @@ import { useEventModal } from "./context/useEventModal";
 import { useClickOutside } from "./hooks/useClickOutside";
 import { useDialog } from "./hooks/useDialog";
 import { observer } from "./utils/intersectionObserver";
-import { useEventStore } from "./context/useEventStore";
 import { useRouter } from "./router/useRouter";
+import { initializeDatabase } from "./store/database";
 
 const CalendarView = () => {
+    useEffect(() => {
+        const setupDatabase = async () => {
+            await initializeDatabase();
+        };
+
+        setupDatabase();
+    }, []);
+
     const [view, setView] = useState("Week");
 
     const { currentDate, setCurrentDate, currentWeekDays, previousDay, previousWeek, nextDay, nextWeek } = useRouter();
@@ -21,10 +29,10 @@ const CalendarView = () => {
 
     const currentHourRef = useRef<HTMLTimeElement>(null);
 
-    const { getEvent, isLoading } = useEventStore();
+    // const { getEvent, isLoading } = useEventStore();
 
     useEffect(() => {
-        if (isLoading) return;
+        // if (isLoading) return;
         let element: HTMLElement | null;
         const handleHashChange = async () => {
             const hash = window.location.hash;
@@ -33,10 +41,10 @@ const CalendarView = () => {
 
             const eventId = hash.substring(1);
 
-            const event = getEvent(eventId);
+            // const event = getEvent(eventId);
             if (event) {
-                const eventDate = new Date(event.startDateTime);
-                setCurrentDate(eventDate);
+                // const eventDate = new Date(event.startDateTime);
+                // setCurrentDate(eventDate);
                 setTimeout(() => {
                     element = document.getElementById(eventId);
 
@@ -52,7 +60,7 @@ const CalendarView = () => {
         return () => {
             window.removeEventListener("hashchange", handleHashChange);
         };
-    }, [window.location.hash, isLoading]);
+    }, [window.location.hash]);
 
     const scrollToCurrentHour = () => {
         if (currentHourRef.current) {

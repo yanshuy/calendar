@@ -1,9 +1,8 @@
 import type React from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useClickOutside } from "../hooks/useClickOutside";
-import type { CalendarEvent } from "../utils/types";
 import { add, format } from "date-fns";
-import { useEventStore } from "../context/useEventStore";
+import { categories, DBCalendarEvent } from "../db/schema";
 
 export default function EventModal({
     event,
@@ -11,7 +10,7 @@ export default function EventModal({
     closeModal,
     dialogRef,
 }: {
-    event: Partial<CalendarEvent>;
+    event: Partial<DBCalendarEvent>;
     isOpen: boolean;
     closeModal: () => void;
     dialogRef: React.RefObject<HTMLDialogElement | null>;
@@ -30,7 +29,7 @@ export default function EventModal({
 
     useLayoutEffect(() => {
         if (isOpen) {
-            if (modalTitleInputRef.current) modalTitleInputRef.current.value = event.name || "";
+            if (modalTitleInputRef.current) modalTitleInputRef.current.value = event.title || "";
             if (modalDescriptionInputRef.current) modalDescriptionInputRef.current.value = event.description || "";
             if (modalStartInputRef.current && event.startDateTime) {
                 const date =
@@ -68,7 +67,7 @@ export default function EventModal({
         }
     }, [isOpen, event]);
 
-    const store = useEventStore()
+    // const store = useEventStore()
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (isEventPast) return;
@@ -124,23 +123,24 @@ export default function EventModal({
         }
 
         // Prepare event data
-        const eventData: CalendarEvent = {
-            id: event?.id ?? "", // Use existing ID if updating
+        const eventData: DBCalendarEvent = {
+            id: event?.id, // Use existing ID if updating
             name: modalTitleInputRef.current!.value,
             startDateTime: modalStartInputRef.current!.value,
             endDateTime: modalEndInputRef.current!.value,
             description: modalDescriptionInputRef.current?.value,
+            //@ts-expect-error "Personal"
             category: modalCategoryInputRef.current?.value == "" ? "Personal" : modalCategoryInputRef.current!.value,
-            eventStatus: "future"
+            eventStatus: "coming"
         };
 
         try {
-            if (eventData.id != "") {
-                await store.updateEvent(eventData);
-            } else {
-                eventData.id = crypto.randomUUID();
-                await store.addEvents(eventData);
-            }
+            // if (eventData.id) {
+            //     await store.updateEvent(eventData);
+            // } else {
+            //     // eventData.id = crypto.randomUUID();
+            //     await store.addEvents(eventData);
+            // }
             closeModal();
         } catch (err) {
             setErrors({ general: "Failed to save event. Please try again." });
@@ -150,10 +150,9 @@ export default function EventModal({
         }
     }
 
-    const isEventPast = (() => {
-        if (!event.endDateTime) return false
-        return event.endDateTime !== "" ? new Date(event.endDateTime) < new Date() : false;
-    })()
+    let isEventPast = false
+    if (!event.endDateTime) isEventPast = false
+    else isEventPast = event.endDateTime !== "" ? new Date(event.endDateTime) < new Date() : false;
 
     return (
         <dialog
@@ -271,7 +270,7 @@ export default function EventModal({
                         <label htmlFor="category" className="mb-1 block text-sm font-medium text-gray-700">
                             Event category
                         </label>
-                        <select
+                        {/* <select
                             ref={modalCategoryInputRef}
                             id="category"
                             value={category}
@@ -289,11 +288,8 @@ export default function EventModal({
                             }}
                         >
                             <option value="">Select a category</option>
-                            <option value="Work">Work</option>
-                            <option value="Personal">Personal</option>
-                            <option value="Meeting">Meeting</option>
-                            <option value="Reminder">Reminder</option>
-                        </select>
+                            {categories.map(category => (<option value={category}>{category}</option>))}
+                        </select> */}
                         {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
                     </div>
 

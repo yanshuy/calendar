@@ -11,7 +11,6 @@ import {
 } from "date-fns";
 import { useMemo } from "react";
 import EventSticker from "./components/EventSticker";
-import { useEventStore } from "./context/useEventStore";
 
 const TimeSlotsWidth = "75px";
 const CellsHeight = "120px";
@@ -182,16 +181,16 @@ export default DaysView;
 const EventsRenderer = ({ days }: { days: Date[] }) => {
     const currentDays = interval(days[0], endOfDay(days[days.length - 1]));
 
-    const { events } = useEventStore();
-    const currentDaysEvents = useMemo(
-        () => events.filter((event) => isWithinInterval(event.startDateTime, currentDays)),
-        [events, currentDays]
-    );
+    // const { events } = useEventStore();
+    // const currentDaysEvents = useMemo(
+    //     () => events.filter((event) => isWithinInterval(event.startDateTime, currentDays)),
+    //     [events, currentDays]
+    // );
     return (
         <>
-            {currentDaysEvents.map((event) => (
+            {/* {currentDaysEvents.map((event) => (
                 <EventSticker key={event.id} days={days} event={event} />
-            ))}
+            ))} */}
         </>
     );
 };

@@ -1,8 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
-import { CalendarEvent } from "./utils/types";
 import { useEventModal } from "./context/useEventModal";
-import { useEventStore } from "./context/useEventStore";
+// import { useEventStore } from "./context/useEventStore";
 import { useRouter } from "./router/useRouter";
 
 type CalendarSidebarProps = {
@@ -11,18 +10,20 @@ type CalendarSidebarProps = {
 
 export default function CalendarSidebar({ sideViewIsOpen }: CalendarSidebarProps) {
     const [searchTerm, setSearchTerm] = useState("");
-    const { events } = useEventStore();
-    const filteredEvents = useMemo(
-        () =>
-            events.filter((event) => {
-                const text = `${format(new Date(event.startDateTime), "EEE, MMM dd")} ${format(
-                    format(new Date(event.startDateTime), "yyyy-MM-dd'T'HH:mm:ss"),
-                    "h:mm a"
-                )} - ${format(format(new Date(event.startDateTime), "yyyy-MM-dd'T'HH:mm:ss"), "h:mm a")} ${event.name}`;
-                return text.toLowerCase().includes(searchTerm.toLowerCase());
-            }),
-        [events, searchTerm]
-    );
+    
+    // const { events } = useEventStore();
+    // const filteredEvents = useMemo(
+    //     () =>
+    //         events.filter((event) => {
+    //             const text = `${format(new Date(event.startDateTime), "EEE, MMM dd")} ${format(
+    //                 format(new Date(event.startDateTime), "yyyy-MM-dd'T'HH:mm:ss"),
+    //                 "h:mm a"
+    //             )} - ${format(format(new Date(event.startDateTime), "yyyy-MM-dd'T'HH:mm:ss"), "h:mm a")} ${event.title}`;
+    //             return text.toLowerCase().includes(searchTerm.toLowerCase());
+    //         }),
+    //     [events, searchTerm]
+    // );
+    const filteredEvents: CalendarEvent[] = []
 
     return (
         <aside
@@ -88,7 +89,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
     const { openModal } = useEventModal();
     const { setCurrentDate } = useRouter();
 
-    const store = useEventStore()
+    // const store = useEventStore()
     async function handleDelete(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         e.preventDefault();
         e.stopPropagation();
@@ -96,7 +97,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
 
         const confirmed = window.confirm("Are you sure you want to delete this event?");
         if (!confirmed) return false;
-        store.deleteEvent(event.id);
+        // store.deleteEvent(event.id);
     }
 
     return (
@@ -134,7 +135,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
                     e.preventDefault();
                     setCurrentDate(parseISO(event.startDateTime));
                     window.location.hash = "";
-                    window.location.hash = event.id;
+                    window.location.hash = event.id + "";
                 }}
                 onContextMenu={(e) => {
                     e.preventDefault()
@@ -145,7 +146,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
                 <time dateTime={format(event.startDateTime, "yyyy-mm-dd")}>
                     {format(event.startDateTime, "EEE, MMM dd y")}
                 </time>
-                <p className="text-(--category-text-name)">{event.name}</p>
+                <p className="text-(--category-text-name)">{event.title}</p>
                 <span className="mt-0.5">
                     <time dateTime={event.startDateTime}>{format(event.startDateTime, "h:mm a")}</time> -{" "}
                     <time dateTime={event.endDateTime}>{format(event.endDateTime, "h:mm a")}</time>

@@ -1,5 +1,5 @@
 import { endOfDay, format, interval, isWithinInterval, startOfDay } from "date-fns";
-import { CalendarEvent } from "../utils/types";
+import { CalendarEvent } from "../db/schema";
 
 type EventStickersProps = {
     days: Date[];
@@ -21,7 +21,7 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
     return (
         <>
             <div
-                id={event.id}
+                id={event.id + ""}
                 style={{
                     top: `${top}px`,
                     height: `${height}px`,
@@ -44,7 +44,7 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
                     `}
                 >
                     <p className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}>
-                        {event.name}
+                        {event.title}
                     </p>
                     {height >= 60 && (
                         <time className="truncate text-sm" dateTime={scheduledTime}>

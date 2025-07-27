@@ -1,9 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useDialog } from "../hooks/useDialog";
 import EventModal from "../components/EventModal";
-import { CalendarEvent } from "../utils/types";
 import { add, format } from "date-fns";
-import { useIndexedDB } from "../hooks/useIndexedDB";
+import { CalendarEvent } from "../db/schema";
 
 interface EventModalContextType {
     isOpen: boolean;
@@ -30,8 +29,6 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
         setCurrentEvent({});
     }
 
-    const { getByKey } = useIndexedDB("calendar-events");
-
     useEffect(() => {
         const clickHandler = async (e: Event) => {
             if ((e.target as HTMLElement).hasAttribute("data-time")) {
@@ -39,8 +36,8 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
 
                 if (elem.id) {
                     openModal();
-                    const event = await getByKey(elem.id);
-                    if (event) setCurrentEvent(event);
+                    // const event = await getByKey(elem.id);
+                    // if (event) setCurrentEvent(event);
                     return;
                 }
 
@@ -62,7 +59,7 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
         return () => {
             document.removeEventListener("click", clickHandler);
         };
-    }, [getByKey, openModal]);
+    }, [openModal]);
 
     return (
         <EventModalContext.Provider
