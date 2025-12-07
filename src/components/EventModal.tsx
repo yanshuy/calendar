@@ -2,7 +2,16 @@ import type React from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { add, format } from "date-fns";
-import { categories, DBCalendarEvent } from "../db/schema";
+import {
+    CalendarEvent,
+    Categories,
+    categories,
+    EventStore,
+} from "../store/EventStore";
+
+function formatDate(date: Date): string {
+    return format(date, "yyyy-MM-dd'T'HH:mm");
+}
 
 export default function EventModal({
     event,
@@ -10,57 +19,58 @@ export default function EventModal({
     closeModal,
     dialogRef,
 }: {
-    event: Partial<DBCalendarEvent>;
+    event: Partial<CalendarEvent>;
     isOpen: boolean;
     closeModal: () => void;
     dialogRef: React.RefObject<HTMLDialogElement | null>;
 }) {
     useClickOutside(dialogRef, isOpen, () => closeModal());
-
     const modalTitleInputRef = useRef<HTMLInputElement>(null);
     const modalDescriptionInputRef = useRef<HTMLTextAreaElement>(null);
     const modalStartInputRef = useRef<HTMLInputElement>(null);
     const modalEndInputRef = useRef<HTMLInputElement>(null);
     const modalCategoryInputRef = useRef<HTMLSelectElement>(null);
-
+    console.log(event);
     const [category, setCategory] = useState("");
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useLayoutEffect(() => {
         if (isOpen) {
-            if (modalTitleInputRef.current) modalTitleInputRef.current.value = event.title || "";
-            if (modalDescriptionInputRef.current) modalDescriptionInputRef.current.value = event.description || "";
+            if (modalTitleInputRef.current)
+                modalTitleInputRef.current.value = event.title || "";
+            if (modalDescriptionInputRef.current)
+                modalDescriptionInputRef.current.value =
+                    event.description || "";
             if (modalStartInputRef.current && event.startDateTime) {
                 const date =
-                    new Date(event.startDateTime) > new Date()
-                        ? event.startDateTime
-                        : format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
+                    event.startDateTime > new Date()
+                        ? formatDate(event.startDateTime)
+                        : formatDate(new Date());
 
-                modalStartInputRef.current.value = date.slice(0, 16);
-
-                modalStartInputRef.current.min = date.slice(0, 16);
+                modalStartInputRef.current.value = date;
+                modalStartInputRef.current.min = date;
             }
             if (modalEndInputRef.current && event.endDateTime) {
                 modalEndInputRef.current.value = modalStartInputRef.current
-                    ? format(
-                        add(new Date(modalStartInputRef.current?.value), {
-                            minutes: 15,
-                        }),
-                        "yyyy-MM-dd'T'HH:mm"
-                    )
-                    : event.endDateTime.slice(0, 16);
+                    ? formatDate(
+                          add(modalStartInputRef.current.value, {
+                              minutes: 15,
+                          }),
+                      )
+                    : formatDate(event.endDateTime);
 
                 modalEndInputRef.current.min = modalStartInputRef.current
-                    ? add(new Date(modalStartInputRef.current?.min), {
-                        minutes: 15,
-                    })
-                        .toISOString()
-                        .slice(0, 16)
-                    : event.endDateTime.slice(0, 16);
+                    ? formatDate(
+                          add(modalStartInputRef.current.value, {
+                              minutes: 15,
+                          }),
+                      )
+                    : formatDate(new Date());
             }
 
-            if (modalCategoryInputRef.current) modalCategoryInputRef.current.value = event.category || "";
+            if (modalCategoryInputRef.current)
+                modalCategoryInputRef.current.value = event.category || "";
         } else {
             setCategory(event.category || "");
             setErrors({});
@@ -89,30 +99,37 @@ export default function EventModal({
             newErrors.endDateTime = "End date is required";
         }
 
-        if (modalStartInputRef.current?.value && modalEndInputRef.current?.value) {
+        if (
+            modalStartInputRef.current?.value &&
+            modalEndInputRef.current?.value
+        ) {
             if (
                 new Date(modalStartInputRef.current.value).getTime() >=
                 new Date(modalEndInputRef.current.value).getTime()
             ) {
-                newErrors.endDateTime = "End date should be greater than start date";
+                newErrors.endDateTime =
+                    "End date should be greater than start date";
             }
             if (new Date(modalStartInputRef.current.value) < new Date()) {
-                newErrors.startDateTime = "start date should be greater than current time";
+                newErrors.startDateTime =
+                    "start date should be greater than current time";
             }
             if (
                 new Date(modalStartInputRef.current.value).getDay() !==
                 new Date(modalEndInputRef.current.value).getDay()
             ) {
-                newErrors.endDateTime = "Start and end date should be on the same day";
+                newErrors.endDateTime =
+                    "Start and end date should be on the same day";
             }
 
             if (
                 (new Date(modalEndInputRef.current.value).getTime() -
                     new Date(modalStartInputRef.current.value).getTime()) /
-                (1000 * 60) <
+                    (1000 * 60) <
                 15
             ) {
-                newErrors.endDateTime = "differnce between start time and end time should be atleast 15mins";
+                newErrors.endDateTime =
+                    "differnce between start time and end time should be atleast 15mins";
             }
         }
 
@@ -123,24 +140,25 @@ export default function EventModal({
         }
 
         // Prepare event data
-        const eventData: DBCalendarEvent = {
-            id: event?.id, // Use existing ID if updating
+        const eventData: CalendarEvent = {
+            id: event.id ? event.id : undefined,
             name: modalTitleInputRef.current!.value,
-            startDateTime: modalStartInputRef.current!.value,
-            endDateTime: modalEndInputRef.current!.value,
-            description: modalDescriptionInputRef.current?.value,
-            //@ts-expect-error "Personal"
-            category: modalCategoryInputRef.current?.value == "" ? "Personal" : modalCategoryInputRef.current!.value,
-            eventStatus: "coming"
+            startDateTime: new Date(modalStartInputRef.current!.value),
+            endDateTime: new Date(modalEndInputRef.current!.value),
+            description: modalDescriptionInputRef.current!.value,
+            category:
+                modalCategoryInputRef.current?.value == ""
+                    ? categories[1]
+                    : (modalCategoryInputRef.current?.value as Categories),
+            eventStatus: "coming",
         };
 
         try {
-            // if (eventData.id) {
-            //     await store.updateEvent(eventData);
-            // } else {
-            //     // eventData.id = crypto.randomUUID();
-            //     await store.addEvents(eventData);
-            // }
+            if (eventData.id) {
+                await EventStore.q.update(eventData);
+            } else {
+                await EventStore.q.insert(eventData);
+            }
             closeModal();
         } catch (err) {
             setErrors({ general: "Failed to save event. Please try again." });
@@ -150,9 +168,10 @@ export default function EventModal({
         }
     }
 
-    let isEventPast = false
-    if (!event.endDateTime) isEventPast = false
-    else isEventPast = event.endDateTime !== "" ? new Date(event.endDateTime) < new Date() : false;
+    let isEventPast = false;
+    if (event.endDateTime) {
+        isEventPast = event.endDateTime < new Date();
+    }
 
     return (
         <dialog
@@ -163,7 +182,9 @@ export default function EventModal({
             <div className="p-6">
                 <div className="mb-6 flex items-center justify-between">
                     {isEventPast ? (
-                        <h2 className="text-2xl font-bold text-gray-800">Past Event</h2>
+                        <h2 className="text-2xl font-bold text-gray-800">
+                            Past Event
+                        </h2>
                     ) : (
                         <h2 className="text-2xl font-bold text-gray-800">
                             {event?.id ? "Update Event" : "Schedule Event"}
@@ -192,7 +213,10 @@ export default function EventModal({
                     className="space-y-6 [&_input,select,textarea]:outline-transparent [&_input,select,textarea]:ring-offset-2"
                 >
                     <div>
-                        <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
+                        <label
+                            htmlFor="name"
+                            className="mb-1 block text-sm font-medium text-gray-700"
+                        >
                             Event Name
                         </label>
                         <input
@@ -201,19 +225,29 @@ export default function EventModal({
                             ref={modalTitleInputRef}
                             type="text"
                             disabled={isEventPast}
-                            className={`w-full rounded-md border ${errors.name ? "border-red-500 bg-red-50" : "border-gray-300"
-                                } 
-                            px-3 py-2  focus:border-slate-500 focus:ring-1 focus:ring-slate-500 
+                            className={`w-full rounded-md border ${
+                                errors.name
+                                    ? "border-red-500 bg-red-50"
+                                    : "border-gray-300"
+                            }
+                            px-3 py-2  focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                             disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                             transition-colors`}
                             placeholder="Enter event name"
                         />
-                        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                        {errors.name && (
+                            <p className="mt-1 text-sm text-red-600">
+                                {errors.name}
+                            </p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="startDateTime" className="mb-1 block text-sm font-medium text-gray-700">
+                            <label
+                                htmlFor="startDateTime"
+                                className="mb-1 block text-sm font-medium text-gray-700"
+                            >
                                 Start
                             </label>
                             <div className="relative">
@@ -223,24 +257,35 @@ export default function EventModal({
                                     ref={modalStartInputRef}
                                     type="datetime-local"
                                     disabled={isEventPast}
-                                    className={`w-full rounded-md border ${errors.startDateTime ? "border-red-500 bg-red-50" : "border-gray-300"
-                                        } 
+                                    className={`w-full rounded-md border ${
+                                        errors.startDateTime
+                                            ? "border-red-500 bg-red-50"
+                                            : "border-gray-300"
+                                    }
                                     py-2 pl-10 pr-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                                     disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                                     transition-colors`}
                                 />
                                 <ClockIconStart
-                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${isEventPast ? "text-gray-400/50" : "text-gray-400"
-                                        }`}
+                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${
+                                        isEventPast
+                                            ? "text-gray-400/50"
+                                            : "text-gray-400"
+                                    }`}
                                     size={20}
                                 />
                             </div>
                             {errors.startDateTime && (
-                                <p className="mt-1 text-sm text-red-600">{errors.startDateTime}</p>
+                                <p className="mt-1 text-sm text-red-600">
+                                    {errors.startDateTime}
+                                </p>
                             )}
                         </div>
                         <div>
-                            <label htmlFor="endDateTime" className="mb-1 block text-sm font-medium text-gray-700">
+                            <label
+                                htmlFor="endDateTime"
+                                className="mb-1 block text-sm font-medium text-gray-700"
+                            >
                                 End
                             </label>
                             <div className="relative">
@@ -250,34 +295,50 @@ export default function EventModal({
                                     ref={modalEndInputRef}
                                     type="datetime-local"
                                     disabled={isEventPast}
-                                    className={`w-full rounded-md border ${errors.endDateTime ? "border-red-500 bg-red-50" : "border-gray-300"
-                                        } 
+                                    className={`w-full rounded-md border ${
+                                        errors.endDateTime
+                                            ? "border-red-500 bg-red-50"
+                                            : "border-gray-300"
+                                    }
                                     py-2 pl-10 pr-3  focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                                     disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                                     transition-colors`}
                                 />
                                 <ClockIconEnd
-                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${isEventPast ? "text-gray-400/50" : "text-gray-400"
-                                        }`}
+                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${
+                                        isEventPast
+                                            ? "text-gray-400/50"
+                                            : "text-gray-400"
+                                    }`}
                                     size={20}
                                 />
                             </div>
-                            {errors.endDateTime && <p className="mt-1 text-sm text-red-600">{errors.endDateTime}</p>}
+                            {errors.endDateTime && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    {errors.endDateTime}
+                                </p>
+                            )}
                         </div>
                     </div>
 
                     <div>
-                        <label htmlFor="category" className="mb-1 block text-sm font-medium text-gray-700">
+                        <label
+                            htmlFor="category"
+                            className="mb-1 block text-sm font-medium text-gray-700"
+                        >
                             Event category
                         </label>
-                        {/* <select
+                        <select
                             ref={modalCategoryInputRef}
                             id="category"
                             value={category}
                             disabled={isEventPast}
                             onChange={(e) => setCategory(e.target.value)}
-                            className={`w-full rounded-md border ${errors.category ? "border-red-500 bg-red-50" : "border-gray-300"
-                                } 
+                            className={`w-full rounded-md border ${
+                                errors.category
+                                    ? "border-red-500 bg-red-50"
+                                    : "border-gray-300"
+                            }
                             px-3 py-2  focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                             disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                             transition-colors appearance-none bg-no-repeat bg-[right_0.5rem_center]`}
@@ -288,20 +349,34 @@ export default function EventModal({
                             }}
                         >
                             <option value="">Select a category</option>
-                            {categories.map(category => (<option value={category}>{category}</option>))}
-                        </select> */}
-                        {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
+                            {categories.map((category) => (
+                                <option key={category} value={category}>
+                                    {category}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.category && (
+                            <p className="mt-1 text-sm text-red-600">
+                                {errors.category}
+                            </p>
+                        )}
                     </div>
 
                     <div>
-                        <label htmlFor="description" className="mb-1 block text-sm font-medium text-gray-700">
+                        <label
+                            htmlFor="description"
+                            className="mb-1 block text-sm font-medium text-gray-700"
+                        >
                             Description
                         </label>
                         <textarea
                             ref={modalDescriptionInputRef}
                             id="description"
-                            className={`w-full rounded-md border ${errors.description ? "border-red-500 bg-red-50" : "border-gray-300"
-                                } 
+                            className={`w-full rounded-md border ${
+                                errors.description
+                                    ? "border-red-500 bg-red-50"
+                                    : "border-gray-300"
+                            }
                             px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
                             disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
                             transition-colors field-sizing-content resize-none min-h-[calc(2.1lh+1rem)]`}
@@ -309,7 +384,11 @@ export default function EventModal({
                             placeholder="Enter event description"
                             disabled={isEventPast}
                         ></textarea>
-                        {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+                        {errors.description && (
+                            <p className="mt-1 text-sm text-red-600">
+                                {errors.description}
+                            </p>
+                        )}
                     </div>
 
                     {!isEventPast && (
@@ -319,8 +398,8 @@ export default function EventModal({
                                 onClick={() => {
                                     closeModal();
                                 }}
-                                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 
-                                focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 
+                                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200
+                                focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
                                 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 disabled={isSubmitting}
                             >
@@ -328,16 +407,21 @@ export default function EventModal({
                             </button>
                             <button
                                 type="submit"
-                                className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 
-                                focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 
+                                className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900
+                                focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2
                                 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors
                                 shadow-sm hover:shadow-md"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center">
-                                        <LoadingSpinner size={16} className="mr-2" />
-                                        {event?.id ? "Updating..." : "Saving..."}
+                                        <LoadingSpinner
+                                            size={16}
+                                            className="mr-2"
+                                        />
+                                        {event?.id
+                                            ? "Updating..."
+                                            : "Saving..."}
                                     </span>
                                 ) : event?.id ? (
                                     "Update Event"
@@ -372,7 +456,10 @@ export const XIcon: React.FC<IconProps> = ({ size = 24, className = "" }) => (
     </svg>
 );
 
-export const ClockIconStart: React.FC<IconProps> = ({ size = 24, className = "" }) => (
+export const ClockIconStart: React.FC<IconProps> = ({
+    size = 24,
+    className = "",
+}) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         width={size}
@@ -390,7 +477,10 @@ export const ClockIconStart: React.FC<IconProps> = ({ size = 24, className = "" 
     </svg>
 );
 
-export const ClockIconEnd: React.FC<IconProps> = ({ size = 24, className = "" }) => (
+export const ClockIconEnd: React.FC<IconProps> = ({
+    size = 24,
+    className = "",
+}) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         width={size}
@@ -408,7 +498,10 @@ export const ClockIconEnd: React.FC<IconProps> = ({ size = 24, className = "" })
     </svg>
 );
 
-export const LoadingSpinner: React.FC<IconProps> = ({ size = 24, className = "" }) => (
+export const LoadingSpinner: React.FC<IconProps> = ({
+    size = 24,
+    className = "",
+}) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         width={size}

@@ -1,8 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 import { useDialog } from "../hooks/useDialog";
 import EventModal from "../components/EventModal";
-import { add, format } from "date-fns";
-import { CalendarEvent } from "../db/schema";
+import { add } from "date-fns";
+import { CalendarEvent } from "../store/EventStore";
 
 interface EventModalContextType {
     isOpen: boolean;
@@ -10,18 +16,26 @@ interface EventModalContextType {
     closeModal: () => void;
 }
 
-const EventModalContext = createContext<EventModalContextType | undefined>(undefined);
+const EventModalContext = createContext<EventModalContextType | undefined>(
+    undefined,
+);
 
-export const EventModalProvider = ({ children }: { children: React.ReactNode }) => {
+export const EventModalProvider = ({
+    children,
+}: {
+    children: React.ReactNode;
+}) => {
     const [isOpen, setIsOpen, dialogRef] = useDialog(false);
-    const [currentEvent, setCurrentEvent] = useState<Partial<CalendarEvent>>({});
+    const [currentEvent, setCurrentEvent] = useState<Partial<CalendarEvent>>(
+        {},
+    );
 
     const openModal = useCallback(
         (event?: Partial<CalendarEvent>) => {
             setCurrentEvent(event ?? {});
             setIsOpen(true);
         },
-        [setCurrentEvent, setIsOpen]
+        [setCurrentEvent, setIsOpen],
     );
 
     function closeModal() {
@@ -42,14 +56,12 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
                 }
 
                 const { time } = elem.dataset;
-
                 if (!time) return;
-
                 const date = new Date(time);
 
                 openModal({
-                    startDateTime: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
-                    endDateTime: format(add(date, { minutes: 15 }), "yyyy-MM-dd'T'HH:mm:ss"),
+                    startDateTime: date,
+                    endDateTime: add(date, { minutes: 15 }),
                 });
             }
         };
@@ -70,7 +82,12 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
             }}
         >
             {children}
-            <EventModal event={currentEvent} isOpen={isOpen} closeModal={closeModal} dialogRef={dialogRef} />
+            <EventModal
+                event={currentEvent}
+                isOpen={isOpen}
+                closeModal={closeModal}
+                dialogRef={dialogRef}
+            />
         </EventModalContext.Provider>
     );
 };

@@ -1,12 +1,12 @@
-import { SQLocal } from 'sqlocal';
+import { SQLocal } from "sqlocal";
 
-export const db = new SQLocal('database.sqlite3');
+export const db = new SQLocal("database.sqlite3");
 
-export async function initializeDatabase() {
+export async function createTable() {
     try {
         await db.sql(`
             CREATE TABLE IF NOT EXISTS "calendar_events" (
-                "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                "id" TEXT PRIMARY KEY,
                 "title" TEXT NOT NULL,
                 "startDateTime" INTEGER NOT NULL,
                 "endDateTime" INTEGER NOT NULL,
@@ -15,9 +15,9 @@ export async function initializeDatabase() {
                 "category" TEXT DEFAULT 'Personal'
             )
         `);
-
-        console.log('Database initialized');
     } catch (error) {
-        console.error('Database initialization failed:', error);
+        console.error("Database initialization failed:", error);
     }
 }
+
+await createTable();

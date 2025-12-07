@@ -3,27 +3,27 @@ import { startOfToday } from "date-fns";
 import Calendar from "./Calendar";
 import DaysView from "./DaysView";
 import CalendarSidebar from "./CalendarSidebar";
-
 import UploadModal from "./components/UploadModal";
 import { useEventModal } from "./context/useEventModal";
 import { useClickOutside } from "./hooks/useClickOutside";
 import { useDialog } from "./hooks/useDialog";
 import { observer } from "./utils/intersectionObserver";
 import { useRouter } from "./router/useRouter";
-import { initializeDatabase } from "./store/database";
+
+export const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const CalendarView = () => {
-    useEffect(() => {
-        const setupDatabase = async () => {
-            await initializeDatabase();
-        };
-
-        setupDatabase();
-    }, []);
-
     const [view, setView] = useState("Week");
 
-    const { currentDate, setCurrentDate, currentWeekDays, previousDay, previousWeek, nextDay, nextWeek } = useRouter();
+    const {
+        currentDate,
+        setCurrentDate,
+        currentWeekDays,
+        previousDay,
+        previousWeek,
+        nextDay,
+        nextWeek,
+    } = useRouter();
 
     const [sideViewIsOpen, setSideViewIsOpen] = useState(true);
 
@@ -69,11 +69,13 @@ const CalendarView = () => {
     };
 
     useEffect(() => {
-        const calendarHasScrolled = sessionStorage.getItem("calendarHasScrolled");
+        const calendarHasScrolled = sessionStorage.getItem(
+            "calendarHasScrolled",
+        );
 
         if (!calendarHasScrolled) {
             if (!window.location.hash) scrollToCurrentHour();
-            sessionStorage.setItem("calendarHasScrolled", "true");
+            sessionStorage.setItem("calendarHasScrolled", "false");
         }
     }, []);
 
@@ -95,7 +97,12 @@ const CalendarView = () => {
                                 aria-hidden="true"
                                 className="size-[1.125rem] -translate-y-[1px] transform"
                             >
-                                <svg viewBox="2 2 16 16" role="presentation" focusable="false" className="">
+                                <svg
+                                    viewBox="2 2 16 16"
+                                    role="presentation"
+                                    focusable="false"
+                                    className=""
+                                >
                                     <g>
                                         <path d="M14.5 3C15.8807 3 17 4.11929 17 5.5V14.5C17 15.8807 15.8807 17 14.5 17H11.5C11.5 17 11.5 16.6753 11.5 16.5V16H14.5C15.3284 16 16 15.3284 16 14.5V7H4V14.5C4 15.3284 4.67157 16 5.5 16H8.5V16.5C8.5 16.6753 8.5 17 8.5 17H5.5C4.11929 17 3 15.8807 3 14.5V5.5C3 4.11929 4.11929 3 5.5 3H14.5ZM14.5 4H5.5C4.67157 4 4 4.67157 4 5.5V6H16V5.5C16 4.67157 15.3284 4 14.5 4Z"></path>
                                         <path d="M11 9C11 9.55228 10.5523 10 10 10C9.44772 10 9 9.55228 9 9C9 8.44772 9.44772 8 10 8C10.5523 8 11 8.44772 11 9Z"></path>
@@ -113,12 +120,19 @@ const CalendarView = () => {
                         <div className="flex items-center">
                             <button
                                 type="button"
-                                onClick={view == "Week" ? previousWeek : previousDay}
+                                onClick={
+                                    view == "Week" ? previousWeek : previousDay
+                                }
                                 className="-my-1.5 flex flex-none items-center justify-center text-gray-500 hover:text-gray-900"
                             >
                                 <span className="sr-only">Previous month</span>
                                 <div className="h-5 w-5" aria-hidden="true">
-                                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" role="img">
+                                    <svg
+                                        viewBox="0 0 20 20"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        role="img"
+                                    >
                                         <path
                                             fillRule="evenodd"
                                             clipRule="evenodd"
@@ -135,7 +149,12 @@ const CalendarView = () => {
                             >
                                 <span className="sr-only">Next month</span>
                                 <div className="h-5 w-5" aria-hidden="true">
-                                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" role="img">
+                                    <svg
+                                        viewBox="0 0 20 20"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        role="img"
+                                    >
                                         <path
                                             fillRule="evenodd"
                                             clipRule="evenodd"
@@ -153,8 +172,11 @@ const CalendarView = () => {
                         {/* view tab */}
                         <div className="flex min-w-48 rounded-lg border border-slate-200 bg-slate-50 p-[1px]">
                             <button
-                                className={`${view == "Day" ? "bg-white border-slate-200" : "border-transparent"
-                                    } basis-full rounded-[7px] border p-1 font-semibold text-slate-700`}
+                                className={`${
+                                    view == "Day"
+                                        ? "bg-white border-slate-200"
+                                        : "border-transparent"
+                                } basis-full rounded-[7px] border p-1 font-semibold text-slate-700`}
                                 onClick={() => {
                                     setView("Day");
                                 }}
@@ -162,8 +184,11 @@ const CalendarView = () => {
                                 Day
                             </button>
                             <button
-                                className={`${view == "Week" ? "bg-white border-slate-200" : "border-transparent"
-                                    } basis-full rounded-[7px] translate-x-[1px] border p-1 font-semibold text-slate-700`}
+                                className={`${
+                                    view == "Week"
+                                        ? "bg-white border-slate-200"
+                                        : "border-transparent"
+                                } basis-full rounded-[7px] translate-x-[1px] border p-1 font-semibold text-slate-700`}
                                 onClick={() => {
                                     setView("Week");
                                 }}
@@ -177,9 +202,14 @@ const CalendarView = () => {
                             <div className="flex items-center gap-3">
                                 <UploadModalButton />
                                 <button
-                                    className={`hover:stroke-slate-800 ${sideViewIsOpen ? "fill-slate-800" : "fill-slate-400"
-                                        } transition-colors `}
-                                    onClick={() => setSideViewIsOpen((prev) => !prev)}
+                                    className={`hover:stroke-slate-800 ${
+                                        sideViewIsOpen
+                                            ? "fill-slate-800"
+                                            : "fill-slate-400"
+                                    } transition-colors `}
+                                    onClick={() =>
+                                        setSideViewIsOpen((prev) => !prev)
+                                    }
                                 >
                                     <span className="sr-only">Search</span>
                                     <span>
@@ -192,7 +222,10 @@ const CalendarView = () => {
                                             enableBackground="new 0 0 256 256"
                                             className="size-6"
                                         >
-                                            <metadata>Svg Vector Icons : http://www.onlinewebfonts.com/icon </metadata>
+                                            <metadata>
+                                                Svg Vector Icons :
+                                                http://www.onlinewebfonts.com/icon{" "}
+                                            </metadata>
                                             <g>
                                                 <g>
                                                     <path d="M244.2,205.5l-37.6-49.1c13.3-12.7,21.7-30.5,21.7-50.3c0-38.4-31.3-69.6-69.8-69.6c-38.5,0-69.8,31.3-69.8,69.6c0,38.4,31.3,69.6,69.8,69.6c12.4,0,24-3.3,34.1-9l37.7,49.2c1.7,2.2,4.3,3.4,7,3.4c1.9,0,3.7-0.6,5.3-1.8C246.4,214.8,247.1,209.3,244.2,205.5L244.2,205.5z M104.8,106.1c0-29.5,24.1-53.5,53.7-53.5c29.6,0,53.7,24,53.7,53.5c0,29.5-24.1,53.5-53.7,53.5C128.9,159.6,104.8,135.6,104.8,106.1L104.8,106.1z M71,71.1H18.7c-4.8,0-8.7-3.9-8.7-8.7c0-4.8,3.9-8.7,8.7-8.7H71c4.8,0,8.7,3.9,8.7,8.7C79.7,67.2,75.8,71.1,71,71.1L71,71.1z M68.9,157.1H18.7c-4.8,0-8.7-3.9-8.7-8.7c0-4.8,3.9-8.7,8.7-8.7h50.2c4.8,0,8.7,3.9,8.7,8.7C77.6,153.2,73.7,157.1,68.9,157.1L68.9,157.1z M58.6,114H18.7c-4.8,0-8.7-3.9-8.7-8.7c0-4.8,3.9-8.7,8.7-8.7h39.9c4.8,0,8.7,3.9,8.7,8.7C67.3,110.1,63.4,114,58.6,114L58.6,114z M114.8,201.7h-96c-4.8,0-8.7-3.9-8.7-8.7s3.9-8.7,8.7-8.7h96c4.8,0,8.7,3.9,8.7,8.7S119.6,201.7,114.8,201.7L114.8,201.7z" />
@@ -205,7 +238,10 @@ const CalendarView = () => {
                         </div>
                     </div>
                 </div>
-                <DaysView days={view == "Week" ? currentWeekDays() : [currentDate]} currentHourRef={currentHourRef} />
+                <DaysView
+                    days={view == "Week" ? currentWeekDays() : [currentDate]}
+                    currentHourRef={currentHourRef}
+                />
             </div>
             <CalendarSidebar sideViewIsOpen={sideViewIsOpen} />
         </div>
@@ -247,7 +283,9 @@ function CalendarButton() {
     const { currentWeekMonth } = useRouter();
 
     const calendarRef = useRef<HTMLDivElement>(null);
-    useClickOutside(calendarRef, calendarIsOpen, () => setCalendarIsOpen(false));
+    useClickOutside(calendarRef, calendarIsOpen, () =>
+        setCalendarIsOpen(false),
+    );
 
     return (
         <div ref={calendarRef}>
@@ -256,9 +294,18 @@ function CalendarButton() {
                 onClick={() => setCalendarIsOpen((prev) => !prev)}
             >
                 <span className="sr-only">calendar</span>
-                <span className="text-md font-semibold text-slate-700 w-max">{currentWeekMonth()}</span>
-                <div className={`${calendarIsOpen && "rotate-180 transform"} size-5 transition-transform`}>
-                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" role="img">
+                <span className="text-md font-semibold text-slate-700 w-max">
+                    {currentWeekMonth()}
+                </span>
+                <div
+                    className={`${calendarIsOpen && "rotate-180 transform"} size-5 transition-transform`}
+                >
+                    <svg
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        role="img"
+                    >
                         <path
                             fillRule="evenodd"
                             clipRule="evenodd"
@@ -274,13 +321,15 @@ function CalendarButton() {
 }
 
 function UploadModalButton() {
-    const [uploadModalIsOpen, setUploadModalIsOpen, uploadModalRef] = useDialog(false);
+    const [uploadModalIsOpen, setUploadModalIsOpen, uploadModalRef] =
+        useDialog(false);
 
     return (
         <>
             <button
-                className={`hover:stroke-slate-800 stroke-slate-400 transition-colors ${uploadModalIsOpen ? "stroke-slate-800" : "stroke-slate-400"
-                    }`}
+                className={`hover:stroke-slate-800 stroke-slate-400 transition-colors ${
+                    uploadModalIsOpen ? "stroke-slate-800" : "stroke-slate-400"
+                }`}
                 title="import from ics"
                 onClick={() => {
                     setUploadModalIsOpen(true);
@@ -288,7 +337,12 @@ function UploadModalButton() {
             >
                 <span className="sr-only">import</span>
                 <span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="transparent" className="size-6">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="transparent"
+                        className="size-6"
+                    >
                         <path
                             d="M9.31995 11.6799L11.8799 14.2399L14.4399 11.6799"
                             strokeWidth="1.5"
@@ -314,7 +368,10 @@ function UploadModalButton() {
                 </span>
             </button>
 
-            <UploadModal dialogRef={uploadModalRef} setIsOpen={setUploadModalIsOpen} />
+            <UploadModal
+                dialogRef={uploadModalRef}
+                setIsOpen={setUploadModalIsOpen}
+            />
         </>
     );
 }

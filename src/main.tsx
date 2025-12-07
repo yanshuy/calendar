@@ -4,11 +4,10 @@ import "./index.css";
 import CalendarView from "./CalendarView.tsx";
 import { EventModalProvider } from "./context/useEventModal.tsx";
 import { ErrorBoundary } from "./utils/ErrorBoundry.tsx";
-import { EventStoreProvider } from "./context/useEventStore.tsx";
+// import { EventStoreProvider } from "./context/useEventStore.tsx";
 import { RouterProvider } from "./router/useRouter.tsx";
-import "./store/database.ts"
-import "./db/schema.ts"
-import "./store/seed.ts"
+import "./store/database.ts";
+import "./store/seed.ts";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
@@ -21,5 +20,5 @@ createRoot(document.getElementById("root")!).render(
             </RouterProvider>
             {/* </EventStoreProvider> */}
         </ErrorBoundary>
-    </StrictMode>
+    </StrictMode>,
 );

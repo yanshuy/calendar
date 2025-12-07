@@ -24,12 +24,11 @@ const UploadModal = ({
             setError("File size should be less than 1MB");
             return;
         }
-        
+
         setIsOpen(false);
-        
+
         const fileData = new FormData();
         fileData.append("file", file);
-        
 
         const headers = {
             // Authorization: `Bearer ${TOKEN}`,
@@ -66,7 +65,6 @@ const UploadModal = ({
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="flex w-full items-center justify-center">
                         <label
-                            htmlFor="dropzone-file"
                             tabIndex={0}
                             onKeyDown={handleLabelKeyDown}
                             className="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-red-300 bg-red-100 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
@@ -87,7 +85,9 @@ const UploadModal = ({
                                         d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
                                     />
                                 </svg> */}
-                                <h3 className="text-red-400 font-medium mb-4">Oops!!</h3>
+                                <h3 className="text-red-400 font-medium mb-4">
+                                    Oops!!
+                                </h3>
                                 <p className="mb-2 text-sm text-gray-500">
                                     This feature is not implemented yet
                                     {/* <span className="font-semibold">
@@ -99,7 +99,8 @@ const UploadModal = ({
                                     ICS file (MAX. 1MB)
                                 </p>
                             </div>
-                      `      {/* <input
+                            `{" "}
+                            {/* <input
                                 ref={modalFileInputRef}
                                 id="dropzone-file"
                                 type="file"

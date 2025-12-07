@@ -55,7 +55,7 @@
         --category-dots-hover: var(--color-blue-400);
     }
 
-    [data-category="Reminders"] {
+    [data-category="Reminder"] {
         --category-bg: var(--color-red-100);
         --category-text: var(--color-red-400);
         --category-text-name: var(--color-red-600);
