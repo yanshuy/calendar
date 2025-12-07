@@ -7,32 +7,32 @@ A sleek and intuitive calendar application built with React, TypeScript, and Tai
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0.15-blue?logo=tailwindcss)
 ![Vite](https://img.shields.io/badge/Vite-6.2.0-yellow?logo=vite)
 
-## ✨ Features
+## Features
 
-### 📋 Event Management
+### Event Management
 - **Create Events**: Add new events with detailed information including name, description, start/end times, and categories
 - **Edit Events**: Modify existing events with validation and error handling
 - **Delete Events**: Remove events with confirmation prompts
 - **Event Categories**: Organize events by Work, Personal, Meeting, or Reminder categories
 
-### 📅 Calendar Views
+### Calendar Views
 - **Day View**: Focus on a single day's events with hourly time slots
 - **Week View**: See an entire week at a glance with ISO week formatting
 - **Month Navigation**: Browse through months with an intuitive calendar picker
 - **Today Navigation**: Quick jump back to the current date
 
-### 📱 User Experience
+### User Experience
 - **Modern UI**: Clean, minimalist interface with smooth animations
 - **Keyboard Navigation**: Full keyboard accessibility support
 - **Click-to-Create**: Click on any time slot to create a new event
 - **Visual Indicators**: Event dots on calendar dates and color-coded categories
 
-### 💾 Data Storage
+### Data Storage
 - **IndexedDB Integration**: Local storage for offline functionality
 - **ICS Import**: Import events from external calendar files
 - **Data Persistence**: Events persist across browser sessions
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js (v16 or higher)
@@ -67,53 +67,7 @@ npm run build
 
 The built files will be available in the `dist` directory.
 
-## 🛠️ Tech Stack
-
-### Frontend
-- **React 19.0.0** - Modern React with latest features
-- **TypeScript 5.7.2** - Type-safe JavaScript development
-- **Tailwind CSS 4.0.15** - Utility-first CSS framework
-- **Vite 6.2.0** - Fast build tool and development server
-
-### Libraries
-- **date-fns 4.1.0** - Modern JavaScript date utility library
-- **date-fns-tz 3.2.0** - Timezone handling for date-fns
-- **idb 8.0.2** - IndexedDB wrapper for browser storage
-
-### Development Tools
-- **ESLint** - Code linting and formatting
-- **TypeScript ESLint** - TypeScript-specific linting rules
-- **Vite React Plugin** - React support for Vite
-
-## 📁 Project Structure
-
-```
-src/
-├── components/           # Reusable UI components
-│   ├── EventModal.tsx   # Event creation/editing modal
-│   ├── EventSticker.tsx # Event display component
-│   └── UploadModal.tsx  # File import modal
-├── context/             # React context providers
-│   ├── useCalendar.tsx  # Calendar state management
-│   ├── useEventModal.tsx # Modal state management
-│   └── useEventStore.tsx # Event data management
-├── hooks/               # Custom React hooks
-│   ├── useClickOutside.ts # Outside click detection
-│   ├── useDialog.ts     # Dialog/modal management
-│   └── useIndexedDB.ts  # IndexedDB operations
-├── utils/               # Utility functions
-│   ├── date-utils.ts    # Date manipulation helpers
-│   ├── ErrorBoundry.tsx # Error boundary component
-│   ├── intersectionObserver.ts # Scroll detection
-│   └── types.ts         # TypeScript type definitions
-├── Calendar.tsx         # Month calendar component
-├── CalendarSidebar.tsx  # Event sidebar component
-├── CalendarView.tsx     # Main calendar view
-├── DaysView.tsx         # Day/week view component
-└── main.tsx             # Application entry point
-```
-
-## 🎯 Usage
+## Usage
 
 ### Creating Events
 1. Click the "Event" button in the toolbar
@@ -153,7 +107,3 @@ src/
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
