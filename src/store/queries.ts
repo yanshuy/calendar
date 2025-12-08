@@ -1,8 +1,8 @@
 import { SQLocal } from "sqlocal";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { CalendarEvent, categories } from "./EventStore";
-import { timeZone } from "../CalendarView";
 import { getUnixTime } from "date-fns";
+import { timeZone } from "../main";
 
 export class Querier {
     db: SQLocal;
@@ -29,8 +29,26 @@ export class Querier {
         return events as CalendarEvent[];
     }
 
-    async insert(event: Omit<CalendarEvent, "id">) {
-        let id = crypto.randomUUID();
+    async getById(id: string) {
+        let event = await this.db
+            .sql`SELECT * FROM calendar_events WHERE id = ${id}`;
+        if (!event.length) return null;
+
+        return {
+            ...event[0],
+            startDateTime: toZonedTime(
+                new Date(event[0].startDateTime * 1000),
+                timeZone,
+            ),
+            endDateTime: toZonedTime(
+                new Date(event[0].endDateTime * 1000),
+                timeZone,
+            ),
+        } as CalendarEvent;
+    }
+
+    async insert(event: CalendarEvent) {
+        const id = crypto.randomUUID();
         let startDateTime = getUnixTime(
             fromZonedTime(event.startDateTime, timeZone),
         );
@@ -60,5 +78,11 @@ export class Querier {
             eventStatus = ${event.eventStatus},
             category = ${event.category}
             WHERE id = ${event.id}`;
+    }
+
+    async delete(eventId: string) {
+        await this.db.sql`
+            DELETE FROM calendar_events
+            WHERE id = ${eventId}`;
     }
 }

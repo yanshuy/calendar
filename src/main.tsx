@@ -9,16 +9,16 @@ import { RouterProvider } from "./router/useRouter.tsx";
 import "./store/database.ts";
 import "./store/seed.ts";
 
+export const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ErrorBoundary>
-            {/* <EventStoreProvider> */}
             <RouterProvider>
                 <EventModalProvider>
                     <CalendarView />
                 </EventModalProvider>
             </RouterProvider>
-            {/* </EventStoreProvider> */}
         </ErrorBoundary>
     </StrictMode>,
 );

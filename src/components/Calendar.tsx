@@ -13,8 +13,8 @@ import {
     startOfISOWeek,
 } from "date-fns";
 import { useState } from "react";
-import { useRouter } from "./router/useRouter";
-import { EventStore } from "./store/EventStore";
+import { useRouter } from "../router/useRouter";
+import { useEventStore } from "../hooks/useEventStore";
 
 const colStartClasses = [
     "",
@@ -187,7 +187,7 @@ export default function Calendar() {
 }
 
 function EventDot({ day }: { day: Date }) {
-    const events = EventStore.events;
+    const { events } = useEventStore();
     const hasEvents = events.some((event) =>
         isSameDay(event.startDateTime, day),
     );

@@ -1,6 +1,6 @@
 import { db } from "./database";
 import { Querier } from "./queries";
-import { CalendarEvent } from "./EventStore";
+import { CalendarEvent, EventStore } from "./EventStore";
 
 const dummyEvents: CalendarEvent[] = [
     {
@@ -47,6 +47,7 @@ async function seedDatabase() {
         let q = new Querier(db);
         try {
             await Promise.all(dummyEvents.map((e) => q.insert(e)));
+            EventStore.fetchEvents();
         } catch (error) {
             console.error("Seeding failed:", error);
         }

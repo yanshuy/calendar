@@ -1,10 +1,9 @@
 import { format } from "date-fns";
-import { useMemo, useState } from "react";
-import { useEventModal } from "./context/useEventModal";
-// import { useEventStore } from "./context/useEventStore";
-import { useRouter } from "./router/useRouter";
-import { EventStore } from "./store/EventStore";
-import { CalendarEvent } from "./store/EventStore";
+import { Suspense, useState } from "react";
+import { useEventModal } from "../context/useEventModal";
+import { useRouter } from "../router/useRouter";
+import { CalendarEvent, EventStore } from "../store/EventStore";
+import { useEventStore } from "../hooks/useEventStore";
 
 type CalendarSidebarProps = {
     sideViewIsOpen: boolean;
@@ -14,18 +13,6 @@ export default function CalendarSidebar({
     sideViewIsOpen,
 }: CalendarSidebarProps) {
     const [searchTerm, setSearchTerm] = useState("");
-
-    const events = EventStore.events;
-    console.log(events);
-    const filteredEvents = useMemo(
-        () =>
-            events.filter((event) => {
-                // let text = "";
-                const text = `${format(event.startDateTime, "EEE, MMM dd")} ${format(event.startDateTime, "h:mm a")} - ${format(event.endDateTime, "h:mm a")} ${event.title}`;
-                return text.toLowerCase().includes(searchTerm.toLowerCase());
-            }),
-        [events, searchTerm],
-    );
 
     return (
         <aside
@@ -37,7 +24,7 @@ export default function CalendarSidebar({
                 style={{
                     paddingInlineEnd: "1rem",
                 }}
-                className="[&_>*:not(ol)]:min-w-max"
+                className="[&>*:not(ol)]:min-w-max"
             >
                 <div className="px-1">
                     <div className="flex overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-1 focus-within:ring focus-within:ring-slate-900 focus-within:ring-offset-2">
@@ -61,7 +48,7 @@ export default function CalendarSidebar({
                                     version="1.1"
                                     id="Capa_1"
                                     viewBox="0 0 488.4 488.4"
-                                    className="size-8 bg-slate-50 fill-slate-400 py-[.35rem]"
+                                    className="size-7 bg-slate-50 fill-slate-400 py-[.35rem] "
                                 >
                                     <g>
                                         <g>
@@ -73,23 +60,41 @@ export default function CalendarSidebar({
                         </label>
                     </div>
                 </div>
-
-                <h2 className="px-1 pt-4 text-base font-semibold text-slate-700">
-                    Events
-                </h2>
-                <ol
-                    className={`l mt-2 flex h-[calc(100vh-135px)] min-w-[calc(320px-2rem)] flex-col gap-1 overflow-x-auto px-1 text-sm leading-6 text-gray-500`}
-                >
-                    {filteredEvents.length > 0 ? (
-                        filteredEvents.map((event) => (
-                            <EventCard key={event.id} event={event} />
-                        ))
-                    ) : (
-                        <p>No Events found.</p>
-                    )}
-                </ol>
+                <div className="px-1 pt-4">
+                    <h2 className="text-base font-semibold text-slate-700">
+                        Events
+                    </h2>
+                    <Suspense fallback={<div>Loading...</div>}>
+                        <SideBarEvents searchTerm={searchTerm} />
+                    </Suspense>
+                </div>
             </div>
         </aside>
+    );
+}
+
+function SideBarEvents({ searchTerm }: { searchTerm: string }) {
+    const { events, isLoading } = useEventStore();
+    const filteredEvents = events.filter((event) => {
+        // let text = "";
+        const text = `${format(event.startDateTime, "EEE, MMM dd")} ${format(event.startDateTime, "h:mm a")} - ${format(event.endDateTime, "h:mm a")} ${event.title}`;
+        return text.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    return (
+        <ol
+            className={`mt-2 flex h-[calc(100vh-135px)] min-w-[calc(320px-2rem)] flex-col gap-1 overflow-x-auto text-sm leading-6 text-gray-500`}
+        >
+            {isLoading ? (
+                <p>Loading...</p>
+            ) : filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                ))
+            ) : (
+                <p>No Events found.</p>
+            )}
+        </ol>
     );
 }
 
@@ -98,19 +103,17 @@ function EventCard({ event }: { event: CalendarEvent }) {
     const { openModal } = useEventModal();
     const { setCurrentDate } = useRouter();
 
-    // const store = useEventStore()
     async function handleDelete(
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     ) {
         e.preventDefault();
         e.stopPropagation();
-        console.log("Delete event:", event.id);
 
         const confirmed = window.confirm(
             "Are you sure you want to delete this event?",
         );
         if (!confirmed) return false;
-        // store.deleteEvent(event.id);
+        EventStore.deleteEvent(event.id);
     }
 
     return (
@@ -148,7 +151,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
                     e.preventDefault();
                     setCurrentDate(event.startDateTime);
                     window.location.hash = "";
-                    window.location.hash = event.id + "";
+                    window.location.hash = event.id;
                 }}
                 onContextMenu={(e) => {
                     e.preventDefault();

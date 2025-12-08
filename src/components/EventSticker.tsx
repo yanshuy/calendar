@@ -1,5 +1,11 @@
-import { endOfDay, format, interval, isWithinInterval, startOfDay } from "date-fns";
-import { CalendarEvent } from "../db/schema";
+import {
+    endOfDay,
+    format,
+    interval,
+    isWithinInterval,
+    startOfDay,
+} from "date-fns";
+import { CalendarEvent } from "../store/EventStore";
 
 type EventStickersProps = {
     days: Date[];
@@ -8,14 +14,26 @@ type EventStickersProps = {
 
 const EventSticker = ({ days, event }: EventStickersProps) => {
     const startColNo =
-        days.findIndex((day) => isWithinInterval(event.endDateTime, interval(startOfDay(day), endOfDay(day)))) + 1;
+        days.findIndex((day) =>
+            isWithinInterval(
+                event.endDateTime,
+                interval(startOfDay(day), endOfDay(day)),
+            ),
+        ) + 1;
 
     const top =
-        ((new Date(event.startDateTime).getTime() - startOfDay(new Date(event.startDateTime)).getTime()) * 2) /
+        ((new Date(event.startDateTime).getTime() -
+            startOfDay(new Date(event.startDateTime)).getTime()) *
+            2) /
         1000 /
         60;
 
-    const height = ((new Date(event.endDateTime).getTime() - new Date(event.startDateTime).getTime()) * 2) / (1000 * 60);
+    const height =
+        ((new Date(event.endDateTime).getTime() -
+            new Date(event.startDateTime).getTime()) *
+            2) /
+        (1000 * 60);
+
     const scheduledTime = `${format(event.startDateTime, "h:mm")} to ${format(event.endDateTime, "h:mm")}`;
 
     return (
@@ -28,8 +46,8 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
                     gridColumnStart: startColNo,
                     gridColumnEnd: startColNo + 1,
                 }}
-                key={event.startDateTime}
-                data-time={event.startDateTime}
+                key={event.startDateTime.toString()}
+                data-time={event.startDateTime.toString()}
                 className="absolute w-full bg-transparent p-[0.15rem] sticker"
             >
                 <div
@@ -43,11 +61,16 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
                         ${height > 45 ? "p-2" : ""}
                     `}
                 >
-                    <p className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}>
+                    <p
+                        className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}
+                    >
                         {event.title}
                     </p>
                     {height >= 60 && (
-                        <time className="truncate text-sm" dateTime={scheduledTime}>
+                        <time
+                            className="truncate text-sm"
+                            dateTime={scheduledTime}
+                        >
                             {scheduledTime}
                         </time>
                     )}

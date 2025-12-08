@@ -30,8 +30,7 @@ export default function EventModal({
     const modalStartInputRef = useRef<HTMLInputElement>(null);
     const modalEndInputRef = useRef<HTMLInputElement>(null);
     const modalCategoryInputRef = useRef<HTMLSelectElement>(null);
-    console.log(event);
-    const [category, setCategory] = useState("");
+    const [category, setCategory] = useState(categories[1] as Categories);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,16 +48,16 @@ export default function EventModal({
                         : formatDate(new Date());
 
                 modalStartInputRef.current.value = date;
-                modalStartInputRef.current.min = date;
             }
             if (modalEndInputRef.current && event.endDateTime) {
-                modalEndInputRef.current.value = modalStartInputRef.current
-                    ? formatDate(
-                          add(modalStartInputRef.current.value, {
-                              minutes: 15,
-                          }),
-                      )
-                    : formatDate(event.endDateTime);
+                modalEndInputRef.current.value =
+                    modalStartInputRef.current && !event.endDateTime
+                        ? formatDate(
+                              add(modalStartInputRef.current.value, {
+                                  minutes: 15,
+                              }),
+                          )
+                        : formatDate(event.endDateTime);
 
                 modalEndInputRef.current.min = modalStartInputRef.current
                     ? formatDate(
@@ -72,7 +71,7 @@ export default function EventModal({
             if (modalCategoryInputRef.current)
                 modalCategoryInputRef.current.value = event.category || "";
         } else {
-            setCategory(event.category || "");
+            setCategory(event.category || categories[1]);
             setErrors({});
         }
     }, [isOpen, event]);
@@ -119,7 +118,7 @@ export default function EventModal({
                 new Date(modalEndInputRef.current.value).getDay()
             ) {
                 newErrors.endDateTime =
-                    "Start and end date should be on the same day";
+                    "Start and end date can only be on the same day for this";
             }
 
             if (
@@ -141,8 +140,9 @@ export default function EventModal({
 
         // Prepare event data
         const eventData: CalendarEvent = {
+            //@ts-expect-error already handled
             id: event.id ? event.id : undefined,
-            name: modalTitleInputRef.current!.value,
+            title: modalTitleInputRef.current!.value,
             startDateTime: new Date(modalStartInputRef.current!.value),
             endDateTime: new Date(modalEndInputRef.current!.value),
             description: modalDescriptionInputRef.current!.value,
@@ -153,11 +153,12 @@ export default function EventModal({
             eventStatus: "coming",
         };
 
+        console.log("Event data:", eventData);
         try {
             if (eventData.id) {
-                await EventStore.q.update(eventData);
+                await EventStore.updateEvent(eventData);
             } else {
-                await EventStore.q.insert(eventData);
+                await EventStore.insertEvent(eventData);
             }
             closeModal();
         } catch (err) {
@@ -267,7 +268,7 @@ export default function EventModal({
                                     transition-colors`}
                                 />
                                 <ClockIconStart
-                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${
+                                    className={`absolute left-2.5 top-1/2 -translate-y-1/2 transform ${
                                         isEventPast
                                             ? "text-gray-400/50"
                                             : "text-gray-400"
@@ -305,7 +306,7 @@ export default function EventModal({
                                     transition-colors`}
                                 />
                                 <ClockIconEnd
-                                    className={`absolute left-3 top-1/2 -translate-y-1/2 transform ${
+                                    className={`absolute left-2.5 top-1/2 -translate-y-1/2 transform ${
                                         isEventPast
                                             ? "text-gray-400/50"
                                             : "text-gray-400"
@@ -333,7 +334,9 @@ export default function EventModal({
                             id="category"
                             value={category}
                             disabled={isEventPast}
-                            onChange={(e) => setCategory(e.target.value)}
+                            onChange={(e) =>
+                                setCategory(e.target.value as Categories)
+                            }
                             className={`w-full rounded-md border ${
                                 errors.category
                                     ? "border-red-500 bg-red-50"
@@ -348,10 +351,25 @@ export default function EventModal({
                                 backgroundSize: "1.5em 1.5em",
                             }}
                         >
-                            <option value="">Select a category</option>
-                            {categories.map((category) => (
-                                <option key={category} value={category}>
-                                    {category}
+                            <option
+                                value=""
+                                className="px-3 py-2 flex justify-between items-center hover:bg-slate-100"
+                            >
+                                Select a category
+                            </option>
+                            {categories.map((cate) => (
+                                <option
+                                    key={cate}
+                                    value={cate}
+                                    selected={cate == category}
+                                    className="px-3 py-2 flex justify-between items-center hover:bg-slate-100"
+                                >
+                                    <p className="">{cate}</p>
+
+                                    <span
+                                        data-category={cate}
+                                        className="size-4 bg-(--category-text)/50 rounded-full"
+                                    ></span>
                                 </option>
                             ))}
                         </select>

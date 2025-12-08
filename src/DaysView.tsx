@@ -9,8 +9,14 @@ import {
     isWithinInterval,
     startOfToday,
 } from "date-fns";
-import { useMemo } from "react";
+import { useEffect } from "react";
 import EventSticker from "./components/EventSticker";
+import { observer } from "./utils/intersectionObserver";
+import { useRouter } from "./router/useRouter";
+import { flushSync } from "react-dom";
+import { useUrlHash } from "./router/hooks";
+import { EventStore } from "./store/EventStore";
+import { useEventStore } from "./hooks/useEventStore";
 
 const TimeSlotsWidth = "75px";
 const CellsHeight = "120px";
@@ -22,7 +28,6 @@ type DaysViewProps = {
 
 const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
     const today = startOfToday();
-
     const currentHour = new Date().getHours();
 
     return (
@@ -42,11 +47,15 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                             key={format(day, "yyyy-MM-dd")}
                             className="flex items-center justify-center p-2 text-slate-400"
                         >
-                            {days.length == 1 ? format(day, "EEEE") : format(day, "EEE")}
+                            {days.length == 1
+                                ? format(day, "EEEE")
+                                : format(day, "EEE")}
                             <time
                                 dateTime={format(day, "yyyy-MM-dd")}
                                 className={`${
-                                    isSameDay(day, today) ? "ml-1 bg-blue-600 text-white" : "text-slate-700"
+                                    isSameDay(day, today)
+                                        ? "ml-1 bg-blue-600 text-white"
+                                        : "text-slate-700"
                                 } flex size-7 items-center justify-center rounded-[50%]`}
                             >
                                 {format(day, "dd")}
@@ -123,7 +132,10 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                             </time>
                         ))}
                     </div>
-                    <div style={{ gridArea: "buffer", height: "23px" }} className="grid grid-flow-col">
+                    <div
+                        style={{ gridArea: "buffer", height: "23px" }}
+                        className="grid grid-flow-col"
+                    >
                         {Array(days.length)
                             .fill(0)
                             .map((_, index) => (
@@ -132,7 +144,11 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                                     className="relative h-full border-b border-l border-slate-200 bg-slate-100/90"
                                 >
                                     <span className="absolute h-full w-full">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="100%"
+                                            height="100%"
+                                        >
                                             <defs>
                                                 <pattern
                                                     id="pattern_LotO"
@@ -151,7 +167,12 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                                                     />
                                                 </pattern>
                                             </defs>
-                                            <rect width="100%" height="100%" fill="url(#pattern_LotO)" opacity="1" />
+                                            <rect
+                                                width="100%"
+                                                height="100%"
+                                                fill="url(#pattern_LotO)"
+                                                opacity="1"
+                                            />
                                         </svg>
                                     </span>
                                 </div>
@@ -167,7 +188,6 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                         }}
                     >
                         <RenderCells days={days} />
-
                         <EventsRenderer days={days} />
                     </div>
                 </div>
@@ -178,19 +198,40 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
 
 export default DaysView;
 
-const EventsRenderer = ({ days }: { days: Date[] }) => {
-    const currentDays = interval(days[0], endOfDay(days[days.length - 1]));
+export const EventsRenderer = ({ days }: { days: Date[] }) => {
+    const [hash] = useUrlHash();
+    const { setCurrentDate } = useRouter();
 
-    // const { events } = useEventStore();
-    // const currentDaysEvents = useMemo(
-    //     () => events.filter((event) => isWithinInterval(event.startDateTime, currentDays)),
-    //     [events, currentDays]
-    // );
+    useEffect(() => {
+        async function handleHashChange() {
+            const eventId = hash.substring(1);
+            if (!eventId) return;
+
+            const event = await EventStore.q.getById(eventId);
+            if (!event) return;
+
+            const eventDate = event.startDateTime;
+            flushSync(() => setCurrentDate(eventDate));
+
+            const element = document.getElementById(eventId);
+            element?.scrollIntoView({ behavior: "smooth" });
+            if (element) observer.observe(element);
+        }
+
+        handleHashChange();
+    }, [hash, setCurrentDate]);
+
+    const currentDays = interval(days[0], endOfDay(days[days.length - 1]));
+    const { events } = useEventStore();
+    const currentDaysEvents = events.filter((event) =>
+        isWithinInterval(event.startDateTime, currentDays),
+    );
+
     return (
         <>
-            {/* {currentDaysEvents.map((event) => (
+            {currentDaysEvents.map((event) => (
                 <EventSticker key={event.id} days={days} event={event} />
-            ))} */}
+            ))}
         </>
     );
 };
@@ -207,10 +248,22 @@ const StripedBackground = () => {
                         height="15"
                         patternTransform="rotate(45)"
                     >
-                        <line x1="0" y="0" x2="0" y2="15" stroke="#94A3B8" strokeWidth="2" />
+                        <line
+                            x1="0"
+                            y="0"
+                            x2="0"
+                            y2="15"
+                            stroke="#94A3B8"
+                            strokeWidth="2"
+                        />
                     </pattern>
                 </defs>
-                <rect width="100%" height="100%" fill="url(#pattern_LotO)" opacity="1" />
+                <rect
+                    width="100%"
+                    height="100%"
+                    fill="url(#pattern_LotO)"
+                    opacity="1"
+                />
             </svg>
         </span>
     );
@@ -218,7 +271,10 @@ const StripedBackground = () => {
 
 function RenderCells({ days }: { days: Date[] }) {
     const totalHours = days.length * 24;
-    const pastHours = Math.min(Math.max(0, differenceInHours(new Date(), days[0])), totalHours - 1);
+    const pastHours = Math.min(
+        Math.max(0, differenceInHours(new Date(), days[0])),
+        totalHours - 1,
+    );
     const futureHours = totalHours - Math.min(totalHours, pastHours + 1);
 
     const cellHoverColor = "hover:bg-blue-100/50";
@@ -243,7 +299,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index,
                                             minutes: 0,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                                 <span
@@ -252,7 +308,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index,
                                             minutes: 15,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                             </div>
@@ -264,7 +320,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index,
                                             minutes: 30,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                                 <span
@@ -273,7 +329,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index,
                                             minutes: 45,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                             </div>
@@ -287,7 +343,10 @@ function RenderCells({ days }: { days: Date[] }) {
                 }).toISOString()}
                 className="grid h-full grid-rows-2 border-b border-l border-slate-200"
             >
-                {differenceInMinutes(new Date(), add(days[0], { hours: pastHours })) >= 30 ? (
+                {differenceInMinutes(
+                    new Date(),
+                    add(days[0], { hours: pastHours }),
+                ) >= 30 ? (
                     <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
                         <StripedBackground />
                         <span
@@ -296,7 +355,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 0,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                         <span
@@ -305,7 +364,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 15,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                     </div>
@@ -318,7 +377,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 0,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                         <span
@@ -328,12 +387,15 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 15,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                     </div>
                 )}
-                {differenceInMinutes(new Date(), add(days[0], { hours: pastHours })) >= 60 ? (
+                {differenceInMinutes(
+                    new Date(),
+                    add(days[0], { hours: pastHours }),
+                ) >= 60 ? (
                     <div className="relative grid grid-rows-2 bg-slate-100/90">
                         <StripedBackground />
                         <span
@@ -342,7 +404,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 0,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                         <span
@@ -351,7 +413,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 15,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                     </div>
@@ -364,7 +426,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 30,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                         <span
@@ -374,7 +436,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                     hours: pastHours,
                                     minutes: 45,
                                 }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
+                                "yyyy-MM-dd'T'HH:mm:ss",
                             )}
                         ></span>
                     </div>
@@ -399,7 +461,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index + pastHours + 1,
                                             minutes: 0,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                                 <span
@@ -409,7 +471,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index + pastHours + 1,
                                             minutes: 15,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                             </div>
@@ -421,7 +483,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index + pastHours + 1,
                                             minutes: 30,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                                 <span
@@ -431,7 +493,7 @@ function RenderCells({ days }: { days: Date[] }) {
                                             hours: index + pastHours + 1,
                                             minutes: 45,
                                         }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
+                                        "yyyy-MM-dd'T'HH:mm:ss",
                                     )}
                                 ></span>
                             </div>

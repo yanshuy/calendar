@@ -1,20 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { startOfToday } from "date-fns";
-import Calendar from "./Calendar";
+import Calendar from "./components/Calendar";
 import DaysView from "./DaysView";
-import CalendarSidebar from "./CalendarSidebar";
+import CalendarSidebar from "./components/CalendarSidebar";
 import UploadModal from "./components/UploadModal";
 import { useEventModal } from "./context/useEventModal";
 import { useClickOutside } from "./hooks/useClickOutside";
 import { useDialog } from "./hooks/useDialog";
-import { observer } from "./utils/intersectionObserver";
 import { useRouter } from "./router/useRouter";
-
-export const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+import { useUrlSearchParam } from "./router/hooks";
 
 const CalendarView = () => {
-    const [view, setView] = useState("Week");
-
     const {
         currentDate,
         setCurrentDate,
@@ -25,43 +21,10 @@ const CalendarView = () => {
         nextWeek,
     } = useRouter();
 
+    const [view, setView] = useUrlSearchParam("view", ["week", "day"]);
     const [sideViewIsOpen, setSideViewIsOpen] = useState(true);
 
     const currentHourRef = useRef<HTMLTimeElement>(null);
-
-    // const { getEvent, isLoading } = useEventStore();
-
-    useEffect(() => {
-        // if (isLoading) return;
-        let element: HTMLElement | null;
-        const handleHashChange = async () => {
-            const hash = window.location.hash;
-
-            if (!hash && hash.length < 2) return;
-
-            const eventId = hash.substring(1);
-
-            // const event = getEvent(eventId);
-            if (event) {
-                // const eventDate = new Date(event.startDateTime);
-                // setCurrentDate(eventDate);
-                setTimeout(() => {
-                    element = document.getElementById(eventId);
-
-                    element?.scrollIntoView({ behavior: "smooth" });
-                    if (element) observer.observe(element);
-                }, 10);
-            }
-        };
-
-        handleHashChange();
-
-        window.addEventListener("hashchange", handleHashChange);
-        return () => {
-            window.removeEventListener("hashchange", handleHashChange);
-        };
-    }, [window.location.hash]);
-
     const scrollToCurrentHour = () => {
         if (currentHourRef.current) {
             currentHourRef.current.scrollIntoView({ behavior: "smooth" });
@@ -75,7 +38,7 @@ const CalendarView = () => {
 
         if (!calendarHasScrolled) {
             if (!window.location.hash) scrollToCurrentHour();
-            sessionStorage.setItem("calendarHasScrolled", "false");
+            sessionStorage.setItem("calendarHasScrolled", "true");
         }
     }, []);
 
@@ -121,7 +84,7 @@ const CalendarView = () => {
                             <button
                                 type="button"
                                 onClick={
-                                    view == "Week" ? previousWeek : previousDay
+                                    view == "week" ? previousWeek : previousDay
                                 }
                                 className="-my-1.5 flex flex-none items-center justify-center text-gray-500 hover:text-gray-900"
                             >
@@ -143,7 +106,7 @@ const CalendarView = () => {
                                 </div>
                             </button>
                             <button
-                                onClick={view == "Week" ? nextWeek : nextDay}
+                                onClick={view == "week" ? nextWeek : nextDay}
                                 type="button"
                                 className="-my-1.5 -mr-1.5 ml-1.5 flex flex-none items-center justify-center text-gray-500 hover:text-gray-900"
                             >
@@ -173,24 +136,24 @@ const CalendarView = () => {
                         <div className="flex min-w-48 rounded-lg border border-slate-200 bg-slate-50 p-[1px]">
                             <button
                                 className={`${
-                                    view == "Day"
+                                    view == "day"
                                         ? "bg-white border-slate-200"
                                         : "border-transparent"
                                 } basis-full rounded-[7px] border p-1 font-semibold text-slate-700`}
                                 onClick={() => {
-                                    setView("Day");
+                                    setView("day");
                                 }}
                             >
                                 Day
                             </button>
                             <button
                                 className={`${
-                                    view == "Week"
+                                    view == "week"
                                         ? "bg-white border-slate-200"
                                         : "border-transparent"
                                 } basis-full rounded-[7px] translate-x-[1px] border p-1 font-semibold text-slate-700`}
                                 onClick={() => {
-                                    setView("Week");
+                                    setView("week");
                                 }}
                             >
                                 Week
@@ -239,16 +202,14 @@ const CalendarView = () => {
                     </div>
                 </div>
                 <DaysView
-                    days={view == "Week" ? currentWeekDays() : [currentDate]}
+                    days={view == "week" ? currentWeekDays() : [currentDate]}
                     currentHourRef={currentHourRef}
-                />
+                ></DaysView>
             </div>
             <CalendarSidebar sideViewIsOpen={sideViewIsOpen} />
         </div>
     );
 };
-
-export default CalendarView;
 
 function AddEventButton() {
     const { openModal } = useEventModal();
@@ -375,3 +336,5 @@ function UploadModalButton() {
         </>
     );
 }
+
+export default CalendarView;

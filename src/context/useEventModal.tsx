@@ -8,7 +8,7 @@ import {
 import { useDialog } from "../hooks/useDialog";
 import EventModal from "../components/EventModal";
 import { add } from "date-fns";
-import { CalendarEvent } from "../store/EventStore";
+import { CalendarEvent, EventStore } from "../store/EventStore";
 
 interface EventModalContextType {
     isOpen: boolean;
@@ -40,7 +40,7 @@ export const EventModalProvider = ({
 
     function closeModal() {
         setIsOpen(false);
-        setCurrentEvent({});
+        // setCurrentEvent({});
     }
 
     useEffect(() => {
@@ -49,9 +49,8 @@ export const EventModalProvider = ({
                 const elem = e.target as HTMLElement;
 
                 if (elem.id) {
-                    openModal();
-                    // const event = await getByKey(elem.id);
-                    // if (event) setCurrentEvent(event);
+                    const event = await EventStore.q.getById(elem.id);
+                    if (event) openModal(event);
                     return;
                 }
 
