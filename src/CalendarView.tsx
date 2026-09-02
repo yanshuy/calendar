@@ -10,7 +10,6 @@ import { useDialog } from "./hooks/useDialog";
 import { useRouter } from "./router/useRouter";
 import { useUrlSearchParam } from "./router/hooks";
 import { useEventNotifications } from "./hooks/useEventNotifications";
-import { NotificationBanner } from "./components/NotificationBanner";
 import { NotificationToast } from "./components/NotificationToast";
 
 const CalendarView = () => {
@@ -48,7 +47,6 @@ const CalendarView = () => {
 
     return (
         <div className="flex flex-col min-h-screen w-full">
-            <NotificationBanner />
             <NotificationToast toast={activeToast} onDismiss={dismissToast} />
             <div className="flex max-h-screen max-[850px]:w-max flex-1">
             <div className="w-full px-4 basis-full">

@@ -158,9 +158,18 @@ export default function EventModal({
             if (
                 typeof window !== "undefined" &&
                 "Notification" in window &&
-                Notification.permission === "default"
+                Notification.permission === "default" &&
+                !localStorage.getItem("notification_permission_requested")
             ) {
-                Notification.requestPermission().catch(() => {});
+                try {
+                    localStorage.setItem(
+                        "notification_permission_requested",
+                        "true",
+                    );
+                    await Notification.requestPermission();
+                } catch {
+                    // Ignore
+                }
             }
 
             if (eventData.id) {
