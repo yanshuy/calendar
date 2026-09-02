@@ -30,7 +30,14 @@ const CalendarView = () => {
     const currentHourRef = useRef<HTMLTimeElement>(null);
     const scrollToCurrentHour = () => {
         if (currentHourRef.current) {
-            currentHourRef.current.scrollIntoView({ behavior: "smooth" });
+            const scroller = currentHourRef.current.closest(".scroller");
+            if (scroller) {
+                const targetTop = currentHourRef.current.offsetTop - 60;
+                scroller.scrollTo({
+                    top: Math.max(0, targetTop),
+                    behavior: "smooth",
+                });
+            }
         }
     };
 
@@ -46,7 +53,7 @@ const CalendarView = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-screen max-h-screen w-full overflow-hidden bg-white">
+        <div className="flex flex-col h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-white">
             <NotificationToast toast={activeToast} onDismiss={dismissToast} />
             <div className="flex flex-col md:flex-row flex-1 h-full min-h-0 w-full overflow-hidden">
                 <div className="flex flex-col flex-1 h-full min-h-0 w-full overflow-hidden px-2 md:px-4 basis-full">
@@ -256,10 +263,12 @@ const CalendarView = () => {
                     </div>
 
                     {/* --- MAIN CALENDAR DAYS GRID --- */}
-                    <DaysView
-                        days={view == "week" ? currentWeekDays() : [currentDate]}
-                        currentHourRef={currentHourRef}
-                    ></DaysView>
+                    <div className="flex-1 min-h-0 min-w-0 w-full overflow-x-auto overflow-y-hidden flex flex-col">
+                        <DaysView
+                            days={view == "week" ? currentWeekDays() : [currentDate]}
+                            currentHourRef={currentHourRef}
+                        ></DaysView>
+                    </div>
                 </div>
 
                 <CalendarSidebar

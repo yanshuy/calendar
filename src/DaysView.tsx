@@ -30,7 +30,7 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
 
     return (
         <>
-            <div className={`overflow-clip rounded-t-2xl border border-slate-200 bg-slate-50 flex flex-col h-[calc(100vh-6.5rem)] md:h-[calc(100vh-5.5rem)] ${days.length === 1 ? "w-full min-w-0" : "min-w-[650px] md:min-w-[799px]"}`}>
+            <div className={`overflow-clip rounded-t-2xl border border-slate-200 bg-slate-50 flex flex-col h-full min-h-0 flex-1 ${days.length === 1 ? "w-full min-w-0" : "min-w-[650px] md:min-w-[799px]"}`}>
                 <div
                     style={{
                         display: "grid",

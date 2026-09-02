@@ -100,7 +100,6 @@ export default function CalendarSidebar({
                     <SideBarEvents
                         searchTerm={searchTerm}
                         activeTab={activeTab}
-                        onSelectEvent={onClose}
                     />
                 </Suspense>
             </div>
@@ -215,11 +214,9 @@ function SidebarUploadButton() {
 function SideBarEvents({
     searchTerm,
     activeTab,
-    onSelectEvent,
 }: {
     searchTerm: string;
     activeTab: TabType;
-    onSelectEvent?: () => void;
 }) {
     const { events, isLoading } = useEventStore();
     const { timezone } = useTimezone();
@@ -291,7 +288,6 @@ function SideBarEvents({
                     <EventCard
                         key={event.id}
                         event={event}
-                        onSelect={() => onSelectEvent?.()}
                     />
                 ))
             ) : (
@@ -318,10 +314,8 @@ function SideBarEvents({
 
 function EventCard({
     event,
-    onSelect,
 }: {
     event: CalendarEvent;
-    onSelect?: () => void;
 }) {
     const [menuIsOpen, setMenuIsOpen] = useState(false);
     const { openModal } = useEventModal();
@@ -366,7 +360,6 @@ function EventCard({
                     setCurrentDate(startDate);
                     window.location.hash = "";
                     window.location.hash = event.id;
-                    onSelect?.();
                 }}
                 onContextMenu={(e) => {
                     e.preventDefault();
