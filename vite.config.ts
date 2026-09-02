@@ -45,9 +45,12 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm}"],
+                navigateFallback: "/index.html",
+                navigateFallbackAllowlist: [/^\/[^.]*$/],
+                navigateFallbackDenylist: [/^\/src\//, /^\/@vite\//, /^\/api\//],
             },
             devOptions: {
-                enabled: true,
+                enabled: false,
             },
         }),
         {

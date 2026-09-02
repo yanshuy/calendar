@@ -13,6 +13,7 @@ export type CalendarEvent = {
     title: string;
     startDateTime: Date;
     endDateTime: Date;
+    timeZone?: string | null;
     description?: string | null;
     eventStatus: Statuses;
     category: Categories;

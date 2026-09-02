@@ -1,8 +1,6 @@
 import { SQLocal } from "sqlocal";
-import { fromZonedTime, toZonedTime } from "date-fns-tz";
+import { format } from "date-fns";
 import { CalendarEvent, categories } from "./EventStore";
-import { getUnixTime } from "date-fns";
-import { timeZone } from "../main";
 
 export class Querier {
     db: SQLocal;
@@ -16,14 +14,8 @@ export class Querier {
         events = events.map((e) => {
             return {
                 ...e,
-                startDateTime: toZonedTime(
-                    new Date(e.startDateTime * 1000),
-                    timeZone,
-                ),
-                endDateTime: toZonedTime(
-                    new Date(e.endDateTime * 1000),
-                    timeZone,
-                ),
+                startDateTime: new Date(e.startDateTime),
+                endDateTime: new Date(e.endDateTime),
             };
         });
         return events as CalendarEvent[];
@@ -36,45 +28,46 @@ export class Querier {
 
         return {
             ...event[0],
-            startDateTime: toZonedTime(
-                new Date(event[0].startDateTime * 1000),
-                timeZone,
-            ),
-            endDateTime: toZonedTime(
-                new Date(event[0].endDateTime * 1000),
-                timeZone,
-            ),
+            startDateTime: new Date(event[0].startDateTime),
+            endDateTime: new Date(event[0].endDateTime),
         } as CalendarEvent;
     }
 
     async insert(event: CalendarEvent) {
         const id = crypto.randomUUID();
-        let startDateTime = getUnixTime(
-            fromZonedTime(event.startDateTime, timeZone),
+        const startDateTime = format(
+            new Date(event.startDateTime),
+            "yyyy-MM-dd'T'HH:mm:ss",
         );
-        let endDateTime = getUnixTime(
-            fromZonedTime(event.endDateTime, timeZone),
+        const endDateTime = format(
+            new Date(event.endDateTime),
+            "yyyy-MM-dd'T'HH:mm:ss",
         );
-        let category = event.category ? event.category : categories[1];
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const category = event.category ? event.category : categories[1];
 
         return this.db.sql`
-          INSERT INTO calendar_events (id, title, description, startDateTime, endDateTime, eventStatus, category)
-          VALUES (${id}, ${event.title}, ${event.description}, ${startDateTime}, ${endDateTime}, ${event.eventStatus}, ${category})`;
+          INSERT INTO calendar_events (id, title, description, startDateTime, endDateTime, timeZone, eventStatus, category)
+          VALUES (${id}, ${event.title}, ${event.description}, ${startDateTime}, ${endDateTime}, ${timeZone}, ${event.eventStatus}, ${category})`;
     }
 
     async update(event: CalendarEvent) {
-        let startDateTime = getUnixTime(
-            fromZonedTime(event.startDateTime, timeZone),
+        const startDateTime = format(
+            new Date(event.startDateTime),
+            "yyyy-MM-dd'T'HH:mm:ss",
         );
-        let endDateTime = getUnixTime(
-            fromZonedTime(event.endDateTime, timeZone),
+        const endDateTime = format(
+            new Date(event.endDateTime),
+            "yyyy-MM-dd'T'HH:mm:ss",
         );
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         return this.db.sql`
             UPDATE calendar_events
             SET title = ${event.title},
             description = ${event.description},
             startDateTime = ${startDateTime},
             endDateTime = ${endDateTime},
+            timeZone = ${timeZone},
             eventStatus = ${event.eventStatus},
             category = ${event.category}
             WHERE id = ${event.id}`;

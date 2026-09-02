@@ -1,7 +1,5 @@
 import {
     add,
-    differenceInHours,
-    differenceInMinutes,
     endOfDay,
     format,
     interval,
@@ -32,13 +30,13 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
 
     return (
         <>
-            <div className="overflow-clip rounded-t-2xl border border-slate-200 bg-slate-50 min-w-[799px]">
+            <div className={`overflow-clip rounded-t-2xl border border-slate-200 bg-slate-50 flex flex-col h-[calc(100vh-6.5rem)] md:h-[calc(100vh-5.5rem)] ${days.length === 1 ? "w-full min-w-0" : "min-w-[650px] md:min-w-[799px]"}`}>
                 <div
                     style={{
                         display: "grid",
                         gridTemplateColumns: `${TimeSlotsWidth} repeat(${days.length}, 1fr)`,
                     }}
-                    className="sticky top-0 z-10 border-b border-gray-200 bg-slate-50 py-2"
+                    className="sticky top-0 z-10 border-b border-gray-200 bg-slate-50 py-2 shrink-0"
                 >
                     <div></div>
                     {/* DayCells  */}
@@ -76,9 +74,8 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                         overscrollBehavior: "contain",
                         scrollBehavior: "smooth",
                         scrollPadding: "2.5rem",
-                        height: "calc(100vh - 8.725rem)",
                     }}
-                    className="scroller"
+                    className="scroller flex-1 min-h-0"
                 >
                     <div
                         style={{
@@ -270,236 +267,88 @@ const StripedBackground = () => {
 };
 
 function RenderCells({ days }: { days: Date[] }) {
-    const totalHours = days.length * 24;
-    const pastHours = Math.min(
-        Math.max(0, differenceInHours(new Date(), days[0])),
-        totalHours - 1,
-    );
-    const futureHours = totalHours - Math.min(totalHours, pastHours + 1);
-
-    const cellHoverColor = "hover:bg-blue-100/50";
+    const now = new Date();
+    const cellHoverColor = "hover:bg-blue-100/50 cursor-pointer";
 
     return (
         <>
-            {Array(pastHours)
-                .fill(0)
-                .map((_, index) => {
+            {days.flatMap((day) => {
+                const year = day.getFullYear();
+                const month = day.getMonth();
+                const date = day.getDate();
+
+                return Array.from({ length: 24 }, (_, hour) => {
+                    const slotMid = new Date(year, month, date, hour, 30, 0);
+                    const slotEnd = new Date(year, month, date, hour + 1, 0, 0);
+
+                    const isFirstHalfPast = slotMid <= now;
+                    const isSecondHalfPast = slotEnd <= now;
+
+                    const time00 = format(
+                        new Date(year, month, date, hour, 0, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+                    const time15 = format(
+                        new Date(year, month, date, hour, 15, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+                    const time30 = format(
+                        new Date(year, month, date, hour, 30, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+                    const time45 = format(
+                        new Date(year, month, date, hour, 45, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+
                     return (
                         <div
-                            key={add(days[0], {
-                                hours: index,
-                            }).toISOString()}
+                            key={`${year}-${month}-${date}-${hour}`}
                             className="grid h-full grid-rows-2 border-b border-l border-slate-200"
                         >
-                            <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
-                                <StripedBackground />
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 0,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 15,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                            </div>
-                            <div className="relative grid grid-rows-2 bg-slate-100/90">
-                                <StripedBackground />
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 30,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 45,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                            </div>
+                            {/* First half-hour (0-30 min) */}
+                            {isFirstHalfPast ? (
+                                <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
+                                    <StripedBackground />
+                                    <span data-time={time00}></span>
+                                    <span data-time={time15}></span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-rows-2 border-b border-dashed border-slate-200">
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time00}
+                                    ></span>
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time15}
+                                    ></span>
+                                </div>
+                            )}
+
+                            {/* Second half-hour (30-60 min) */}
+                            {isSecondHalfPast ? (
+                                <div className="relative grid grid-rows-2 bg-slate-100/90">
+                                    <StripedBackground />
+                                    <span data-time={time30}></span>
+                                    <span data-time={time45}></span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-rows-2">
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time30}
+                                    ></span>
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time45}
+                                    ></span>
+                                </div>
+                            )}
                         </div>
                     );
-                })}
-
-            <div
-                key={add(days[0], {
-                    hours: pastHours,
-                }).toISOString()}
-                className="grid h-full grid-rows-2 border-b border-l border-slate-200"
-            >
-                {differenceInMinutes(
-                    new Date(),
-                    add(days[0], { hours: pastHours }),
-                ) >= 30 ? (
-                    <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
-                        <StripedBackground />
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 0,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 15,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                    </div>
-                ) : (
-                    <div className="grid grid-rows-2 border-b border-dashed border-slate-200">
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 0,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 15,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                    </div>
-                )}
-                {differenceInMinutes(
-                    new Date(),
-                    add(days[0], { hours: pastHours }),
-                ) >= 60 ? (
-                    <div className="relative grid grid-rows-2 bg-slate-100/90">
-                        <StripedBackground />
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 0,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 15,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                    </div>
-                ) : (
-                    <div className="grid grid-rows-2">
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 30,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 45,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss",
-                            )}
-                        ></span>
-                    </div>
-                )}
-            </div>
-
-            {Array(futureHours)
-                .fill(0)
-                .map((_, index) => {
-                    return (
-                        <div
-                            key={add(days[0], {
-                                hours: index + pastHours + 1,
-                            }).toISOString()}
-                            className="grid h-full grid-rows-2 border-b border-l border-slate-200"
-                        >
-                            <div className="grid grid-rows-2 border-b border-dashed border-slate-200">
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 0,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 15,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                            </div>
-                            <div className="grid grid-rows-2">
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 30,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 45,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss",
-                                    )}
-                                ></span>
-                            </div>
-                        </div>
-                    );
-                })}
+                });
+            })}
         </>
     );
 }

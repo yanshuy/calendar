@@ -12,7 +12,7 @@ interface RouterContextType {
     currentDate: Date;
     setCurrentDate: (date: Date) => void;
     currentWeekDays: () => Date[];
-    currentWeekMonth: () => string;
+    currentWeekMonth: (short?: boolean) => string;
     previousWeek: () => void;
     nextWeek: () => void;
     previousDay: () => void;
@@ -38,19 +38,28 @@ export const RouterProvider = ({ children }: { children: ReactNode }) => {
         }),
     ];
 
-    const currentWeekMonth = () => {
-        // currentMonth is a string
+    const currentWeekMonth = (short = false) => {
         const days = currentWeekDays();
-        const currentWeekStart = days[0],
-            currentWeekEnd = days[days.length - 1];
-        const Month =
-            currentWeekStart.getMonth() === currentWeekEnd.getMonth()
-                ? format(currentWeekStart, "MMMM-yyyy")
-                : `${format(currentWeekStart, "MMMM-yyyy")} - ${format(
-                      currentWeekEnd,
-                      "MMMM-yyyy",
-                  )}`;
-        return Month;
+        const currentWeekStart = days[0];
+        const currentWeekEnd = days[days.length - 1];
+
+        if (short) {
+            if (currentWeekStart.getFullYear() !== currentWeekEnd.getFullYear()) {
+                return `${format(currentWeekStart, "MMM yyyy")} - ${format(currentWeekEnd, "MMM yyyy")}`;
+            }
+            if (currentWeekStart.getMonth() !== currentWeekEnd.getMonth()) {
+                return `${format(currentWeekStart, "MMM")} - ${format(currentWeekEnd, "MMM yyyy")}`;
+            }
+            return format(currentWeekStart, "MMMM yyyy");
+        }
+
+        if (currentWeekStart.getFullYear() !== currentWeekEnd.getFullYear()) {
+            return `${format(currentWeekStart, "MMMM-yyyy")} - ${format(currentWeekEnd, "MMMM-yyyy")}`;
+        }
+        if (currentWeekStart.getMonth() !== currentWeekEnd.getMonth()) {
+            return `${format(currentWeekStart, "MMMM-yyyy")} - ${format(currentWeekEnd, "MMMM-yyyy")}`;
+        }
+        return format(currentWeekStart, "MMMM-yyyy");
     };
 
     window.onpopstate = () => {

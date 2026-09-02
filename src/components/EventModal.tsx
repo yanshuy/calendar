@@ -9,6 +9,8 @@ import {
     EventStore,
 } from "../store/EventStore";
 
+import { checkDstTransition, DstCheckResult } from "../utils/dst";
+
 function formatDate(date: Date): string {
     return format(date, "yyyy-MM-dd'T'HH:mm");
 }
@@ -34,6 +36,29 @@ export default function EventModal({
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [dstNotice, setDstNotice] = useState<string | null>(null);
+    const [dstInfo, setDstInfo] = useState<DstCheckResult | null>(null);
+    const [dstChoice, setDstChoice] = useState<"earlier" | "later">("earlier");
+
+    const validateDst = (startDateStr: string) => {
+        const dst = checkDstTransition(startDateStr);
+        if (dst.isSkippedGap && dst.adjustedTime) {
+            if (modalStartInputRef.current) {
+                modalStartInputRef.current.value = dst.adjustedTime;
+            }
+            setDstNotice(
+                `⚠️ Daylight Saving Time (Spring Forward): ${dst.originalTime} does not exist on this date. Time automatically adjusted to ${format(new Date(dst.adjustedTime), "h:mm a")}.`,
+            );
+            setDstInfo(null);
+        } else if (dst.isAmbiguousOverlap) {
+            setDstInfo(dst);
+            setDstNotice(null);
+        } else {
+            setDstNotice(null);
+            setDstInfo(null);
+        }
+    };
+
     useLayoutEffect(() => {
         if (isOpen) {
             if (modalTitleInputRef.current)
@@ -41,38 +66,39 @@ export default function EventModal({
             if (modalDescriptionInputRef.current)
                 modalDescriptionInputRef.current.value =
                     event.description || "";
-            if (modalStartInputRef.current && event.startDateTime) {
-                const date =
-                    event.startDateTime > new Date()
-                        ? formatDate(event.startDateTime)
-                        : formatDate(new Date());
 
-                modalStartInputRef.current.value = date;
-            }
-            if (modalEndInputRef.current && event.endDateTime) {
-                modalEndInputRef.current.value =
-                    modalStartInputRef.current && !event.endDateTime
-                        ? formatDate(
-                              add(modalStartInputRef.current.value, {
-                                  minutes: 15,
-                              }),
-                          )
-                        : formatDate(event.endDateTime);
+            const startDate = event.startDateTime
+                ? event.startDateTime instanceof Date
+                    ? event.startDateTime
+                    : new Date(event.startDateTime)
+                : new Date();
 
-                modalEndInputRef.current.min = modalStartInputRef.current
-                    ? formatDate(
-                          add(modalStartInputRef.current.value, {
-                              minutes: 15,
-                          }),
-                      )
-                    : formatDate(new Date());
+            const endDate = event.endDateTime
+                ? event.endDateTime instanceof Date
+                    ? event.endDateTime
+                    : new Date(event.endDateTime)
+                : add(startDate, { minutes: 15 });
+
+            const startStr = formatDate(startDate);
+            const endStr = formatDate(endDate);
+
+            if (modalStartInputRef.current) {
+                modalStartInputRef.current.value = startStr;
             }
+            if (modalEndInputRef.current) {
+                modalEndInputRef.current.value = endStr;
+                modalEndInputRef.current.min = startStr;
+            }
+
+            validateDst(startStr);
 
             if (modalCategoryInputRef.current)
                 modalCategoryInputRef.current.value = event.category || "";
         } else {
             setCategory(event.category || categories[1]);
             setErrors({});
+            setDstNotice(null);
+            setDstInfo(null);
         }
     }, [isOpen, event]);
 
@@ -102,33 +128,17 @@ export default function EventModal({
             modalStartInputRef.current?.value &&
             modalEndInputRef.current?.value
         ) {
-            if (
-                new Date(modalStartInputRef.current.value).getTime() >=
-                new Date(modalEndInputRef.current.value).getTime()
-            ) {
+            const startTime = new Date(modalStartInputRef.current.value).getTime();
+            const endTime = new Date(modalEndInputRef.current.value).getTime();
+
+            if (startTime >= endTime) {
                 newErrors.endDateTime =
                     "End date should be greater than start date";
             }
-            if (new Date(modalStartInputRef.current.value) < new Date()) {
-                newErrors.startDateTime =
-                    "start date should be greater than current time";
-            }
-            if (
-                new Date(modalStartInputRef.current.value).getDay() !==
-                new Date(modalEndInputRef.current.value).getDay()
-            ) {
-                newErrors.endDateTime =
-                    "Start and end date can only be on the same day for this";
-            }
 
-            if (
-                (new Date(modalEndInputRef.current.value).getTime() -
-                    new Date(modalStartInputRef.current.value).getTime()) /
-                    (1000 * 60) <
-                15
-            ) {
+            if ((endTime - startTime) / (1000 * 60) < 15) {
                 newErrors.endDateTime =
-                    "differnce between start time and end time should be atleast 15mins";
+                    "Difference between start time and end time should be at least 15 mins";
             }
         }
 
@@ -195,9 +205,9 @@ export default function EventModal({
         <dialog
             id="event-modal"
             ref={dialogRef}
-            className="w-full max-w-xl rounded-lg m-auto shadow-[0_10px_40px_rgba(0,0,0,0.15)]"
+            className="w-[calc(100%-2rem)] max-w-xl max-h-[90vh] overflow-y-auto rounded-lg m-auto shadow-[0_10px_40px_rgba(0,0,0,0.15)]"
         >
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 <div className="mb-6 flex items-center justify-between">
                     {isEventPast ? (
                         <h2 className="text-2xl font-bold text-gray-800">
@@ -274,6 +284,13 @@ export default function EventModal({
                                 ref={modalStartInputRef}
                                 type="datetime-local"
                                 disabled={isEventPast}
+                                onChange={(e) => {
+                                    validateDst(e.target.value);
+                                    if (modalEndInputRef.current) {
+                                        modalEndInputRef.current.min =
+                                            e.target.value;
+                                    }
+                                }}
                                 className={`w-full rounded-md border ${
                                     errors.startDateTime
                                         ? "border-red-500 bg-red-50"
@@ -319,6 +336,60 @@ export default function EventModal({
                         </div>
                     </div>
 
+                    {/* DST Skipped Gap Notice ("Spring Forward") */}
+                    {dstNotice && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-start gap-2">
+                            <span className="text-sm shrink-0">🕒</span>
+                            <div>
+                                <p className="font-semibold text-amber-950">
+                                    Daylight Saving Time Adjustment
+                                </p>
+                                <p className="mt-0.5 text-amber-800">
+                                    {dstNotice}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DST Ambiguous Overlap Choice ("Fall Back") */}
+                    {dstInfo?.isAmbiguousOverlap && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5 font-semibold text-blue-950">
+                                <span>🕒</span>
+                                <span>Daylight Saving Time: Repeated Hour</span>
+                            </div>
+                            <p className="text-blue-800">
+                                This hour occurs twice during the Fall Back
+                                transition. Choose your intended timing:
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    className={`px-3 py-1.5 rounded-md border text-xs font-semibold cursor-pointer transition-all ${
+                                        dstChoice === "earlier"
+                                            ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                                            : "bg-white text-blue-800 border-blue-200 hover:bg-blue-100"
+                                    }`}
+                                    onClick={() => setDstChoice("earlier")}
+                                >
+                                    {dstInfo.earlierLabel ||
+                                        "Earlier occurrence"}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`px-3 py-1.5 rounded-md border text-xs font-semibold cursor-pointer transition-all ${
+                                        dstChoice === "later"
+                                            ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                                            : "bg-white text-blue-800 border-blue-200 hover:bg-blue-100"
+                                    }`}
+                                    onClick={() => setDstChoice("later")}
+                                >
+                                    {dstInfo.laterLabel || "Later occurrence"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <label
                             htmlFor="category"
@@ -348,25 +419,12 @@ export default function EventModal({
                                 backgroundSize: "1.5em 1.5em",
                             }}
                         >
-                            <option
-                                value=""
-                                className="px-3 py-2 flex justify-between items-center hover:bg-slate-100"
-                            >
+                            <option value="">
                                 Select a category
                             </option>
                             {categories.map((cate) => (
-                                <option
-                                    key={cate}
-                                    value={cate}
-                                    selected={cate == category}
-                                    className="px-3 py-2 flex justify-between items-center hover:bg-slate-100"
-                                >
-                                    <p className="">{cate}</p>
-
-                                    <span
-                                        data-category={cate}
-                                        className="size-4 bg-(--category-text)/50 rounded-full"
-                                    ></span>
+                                <option key={cate} value={cate}>
+                                    {cate}
                                 </option>
                             ))}
                         </select>

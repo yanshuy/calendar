@@ -1,11 +1,7 @@
-import {
-    endOfDay,
-    format,
-    interval,
-    isWithinInterval,
-    startOfDay,
-} from "date-fns";
+import { format } from "date-fns";
 import { CalendarEvent } from "../store/EventStore";
+import { useTimezone } from "../context/TimezoneContext";
+import { getZonedEventDates } from "../utils/timezone";
 
 type EventStickersProps = {
     days: Date[];
@@ -13,28 +9,27 @@ type EventStickersProps = {
 };
 
 const EventSticker = ({ days, event }: EventStickersProps) => {
+    const { timezone } = useTimezone();
+    const { startDate, endDate } = getZonedEventDates(event, timezone);
+
     const startColNo =
-        days.findIndex((day) =>
-            isWithinInterval(
-                event.endDateTime,
-                interval(startOfDay(day), endOfDay(day)),
-            ),
+        days.findIndex(
+            (day) =>
+                startDate.getFullYear() === day.getFullYear() &&
+                startDate.getMonth() === day.getMonth() &&
+                startDate.getDate() === day.getDate(),
         ) + 1;
 
-    const top =
-        ((new Date(event.startDateTime).getTime() -
-            startOfDay(new Date(event.startDateTime)).getTime()) *
-            2) /
-        1000 /
-        60;
+    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+    const top = startMinutes * 2;
 
-    const height =
-        ((new Date(event.endDateTime).getTime() -
-            new Date(event.startDateTime).getTime()) *
-            2) /
-        (1000 * 60);
+    const durationMinutes = Math.max(
+        15,
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60),
+    );
+    const height = durationMinutes * 2;
 
-    const scheduledTime = `${format(event.startDateTime, "h:mm")} to ${format(event.endDateTime, "h:mm")}`;
+    const scheduledTime = `${format(startDate, "h:mm a")} to ${format(endDate, "h:mm a")}`;
 
     return (
         <>

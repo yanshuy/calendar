@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
 @layer base {
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
     button,
     input,
     select,
