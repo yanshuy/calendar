@@ -251,31 +251,21 @@ export default function EventModal({
                             >
                                 Start
                             </label>
-                            <div className="relative">
-                                <input
-                                    required
-                                    id="startDateTime"
-                                    ref={modalStartInputRef}
-                                    type="datetime-local"
-                                    disabled={isEventPast}
-                                    className={`w-full rounded-md border ${
-                                        errors.startDateTime
-                                            ? "border-red-500 bg-red-50"
-                                            : "border-gray-300"
-                                    }
-                                    py-2 pl-10 pr-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
-                                    disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
-                                    transition-colors`}
-                                />
-                                <ClockIconStart
-                                    className={`absolute left-2.5 top-1/2 -translate-y-1/2 transform ${
-                                        isEventPast
-                                            ? "text-gray-400/50"
-                                            : "text-gray-400"
-                                    }`}
-                                    size={20}
-                                />
-                            </div>
+                            <input
+                                required
+                                id="startDateTime"
+                                ref={modalStartInputRef}
+                                type="datetime-local"
+                                disabled={isEventPast}
+                                className={`w-full rounded-md border ${
+                                    errors.startDateTime
+                                        ? "border-red-500 bg-red-50"
+                                        : "border-gray-300"
+                                }
+                                px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
+                                disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
+                                transition-colors`}
+                            />
                             {errors.startDateTime && (
                                 <p className="mt-1 text-sm text-red-600">
                                     {errors.startDateTime}
@@ -289,31 +279,21 @@ export default function EventModal({
                             >
                                 End
                             </label>
-                            <div className="relative">
-                                <input
-                                    required
-                                    id="endDateTime"
-                                    ref={modalEndInputRef}
-                                    type="datetime-local"
-                                    disabled={isEventPast}
-                                    className={`w-full rounded-md border ${
-                                        errors.endDateTime
-                                            ? "border-red-500 bg-red-50"
-                                            : "border-gray-300"
-                                    }
-                                    py-2 pl-10 pr-3  focus:border-slate-500 focus:ring-1 focus:ring-slate-500
-                                    disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
-                                    transition-colors`}
-                                />
-                                <ClockIconEnd
-                                    className={`absolute left-2.5 top-1/2 -translate-y-1/2 transform ${
-                                        isEventPast
-                                            ? "text-gray-400/50"
-                                            : "text-gray-400"
-                                    }`}
-                                    size={20}
-                                />
-                            </div>
+                            <input
+                                required
+                                id="endDateTime"
+                                ref={modalEndInputRef}
+                                type="datetime-local"
+                                disabled={isEventPast}
+                                className={`w-full rounded-md border ${
+                                    errors.endDateTime
+                                        ? "border-red-500 bg-red-50"
+                                        : "border-gray-300"
+                                }
+                                px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500
+                                disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed
+                                transition-colors`}
+                            />
                             {errors.endDateTime && (
                                 <p className="mt-1 text-sm text-red-600">
                                     {errors.endDateTime}

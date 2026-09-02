@@ -9,8 +9,10 @@ import { useClickOutside } from "./hooks/useClickOutside";
 import { useDialog } from "./hooks/useDialog";
 import { useRouter } from "./router/useRouter";
 import { useUrlSearchParam } from "./router/hooks";
+import { useEventNotifications } from "./hooks/useEventNotifications";
 
 const CalendarView = () => {
+    useEventNotifications();
     const {
         currentDate,
         setCurrentDate,

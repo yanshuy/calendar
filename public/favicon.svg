@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Card Background with subtle soft border -->
+  <rect width="512" height="512" rx="128" fill="#ffffff"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="#ffffff" stroke="#e2e8f0" stroke-width="12"/>
+  
+  <!-- Calendar Body -->
+  <rect x="72" y="96" width="368" height="340" rx="36" fill="#f8fafc" stroke="#cbd5e1" stroke-width="8"/>
+  
+  <!-- Header Banner (Vibrant Royal Blue) -->
+  <path d="M72 132C72 112.118 88.1177 96 108 96H404C423.882 96 440 112.118 440 132V180H72V132Z" fill="#2563eb"/>
+  
+  <!-- Binder Rings -->
+  <rect x="144" y="60" width="32" height="72" rx="16" fill="#0f172a"/>
+  <rect x="336" y="60" width="32" height="72" rx="16" fill="#0f172a"/>
+  <rect x="152" y="68" width="16" height="32" rx="8" fill="#60a5fa"/>
+  <rect x="344" y="68" width="16" height="32" rx="8" fill="#60a5fa"/>
+  
+  <!-- Calendar Grid Dots / Event Badges -->
+  <circle cx="152" cy="248" r="22" fill="#ef4444"/>
+  <circle cx="256" cy="248" r="22" fill="#3b82f6"/>
+  <circle cx="360" cy="248" r="22" fill="#10b981"/>
+  
+  <circle cx="152" cy="336" r="22" fill="#f59e0b"/>
+  <circle cx="256" cy="336" r="22" fill="#8b5cf6"/>
+  <circle cx="360" cy="336" r="22" fill="#06b6d4"/>
+  
+  <rect x="130" y="392" width="252" height="12" rx="6" fill="#cbd5e1"/>
+</svg>
