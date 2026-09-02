@@ -9,28 +9,13 @@ type CalendarSidebarProps = {
     sideViewIsOpen: boolean;
 };
 
-type TabType = "upcoming" | "past";
+type TabType = "current" | "past";
 
 export default function CalendarSidebar({
     sideViewIsOpen,
 }: CalendarSidebarProps) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeTab, setActiveTab] = useState<TabType>("upcoming");
-    const { events } = useEventStore();
-
-    const { upcomingCount, pastCount } = useMemo(() => {
-        const now = Date.now();
-        let upcoming = 0;
-        let past = 0;
-        for (const e of events) {
-            if (new Date(e.endDateTime).getTime() >= now) {
-                upcoming++;
-            } else {
-                past++;
-            }
-        }
-        return { upcomingCount: upcoming, pastCount: past };
-    }, [events]);
+    const [activeTab, setActiveTab] = useState<TabType>("current");
 
     return (
         <aside
@@ -80,47 +65,29 @@ export default function CalendarSidebar({
                 </div>
 
                 <div className="px-1 pt-4">
-                    {/* Tabs for Upcoming vs Past */}
-                    <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs font-medium text-slate-600 mb-2">
+                    {/* View tab styled identically to Day/Week */}
+                    <div className="flex w-full rounded-lg border border-slate-200 bg-slate-50 p-[1px] mb-2">
                         <button
                             type="button"
-                            onClick={() => setActiveTab("upcoming")}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md transition-all cursor-pointer ${
-                                activeTab === "upcoming"
-                                    ? "bg-white text-slate-900 font-semibold shadow-xs"
-                                    : "text-slate-500 hover:text-slate-900"
-                            }`}
+                            className={`${
+                                activeTab === "current"
+                                    ? "bg-white border-slate-200 shadow-xs"
+                                    : "border-transparent text-slate-500 hover:text-slate-900"
+                            } basis-full rounded-[7px] border p-1 text-xs font-semibold text-slate-700 transition-colors cursor-pointer text-center`}
+                            onClick={() => setActiveTab("current")}
                         >
-                            <span>Upcoming</span>
-                            <span
-                                className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                                    activeTab === "upcoming"
-                                        ? "bg-slate-100 text-slate-800 font-bold"
-                                        : "bg-slate-200/70 text-slate-600"
-                                }`}
-                            >
-                                {upcomingCount}
-                            </span>
+                            Current
                         </button>
                         <button
                             type="button"
-                            onClick={() => setActiveTab("past")}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md transition-all cursor-pointer ${
+                            className={`${
                                 activeTab === "past"
-                                    ? "bg-white text-slate-900 font-semibold shadow-xs"
-                                    : "text-slate-500 hover:text-slate-900"
-                            }`}
+                                    ? "bg-white border-slate-200 shadow-xs"
+                                    : "border-transparent text-slate-500 hover:text-slate-900"
+                            } basis-full rounded-[7px] translate-x-[1px] border p-1 text-xs font-semibold text-slate-700 transition-colors cursor-pointer text-center`}
+                            onClick={() => setActiveTab("past")}
                         >
-                            <span>Past</span>
-                            <span
-                                className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                                    activeTab === "past"
-                                        ? "bg-slate-100 text-slate-800 font-bold"
-                                        : "bg-slate-200/70 text-slate-600"
-                                }`}
-                            >
-                                {pastCount}
-                            </span>
+                            Past
                         </button>
                     </div>
 
@@ -146,28 +113,39 @@ function SideBarEvents({
     const { events, isLoading } = useEventStore();
 
     const filteredEvents = useMemo(() => {
-        const now = new Date();
+        const now = Date.now();
 
-        // Separate upcoming (present/future) and past events
+        // Separate active/current (ongoing & upcoming) and past events
         const tabEvents = events.filter((event) => {
-            const endDate = new Date(event.endDateTime);
-            if (activeTab === "upcoming") {
-                return endDate >= now;
+            const endMs = new Date(event.endDateTime).getTime();
+            if (activeTab === "current") {
+                // Event is ongoing or in the future
+                return endMs >= now;
             } else {
-                return endDate < now;
+                // Event has ended
+                return endMs < now;
             }
         });
 
         // Sort:
-        // Upcoming: nearest start time on top (ascending)
-        // Past: most recently ended on top (descending)
+        // Current: Ongoing events first (start <= now <= end), then upcoming events (start > now) ascending
+        // Past: Most recently ended first (descending)
         tabEvents.sort((a, b) => {
-            const timeA = new Date(a.startDateTime).getTime();
-            const timeB = new Date(b.startDateTime).getTime();
-            if (activeTab === "upcoming") {
-                return timeA - timeB;
+            const startA = new Date(a.startDateTime).getTime();
+            const startB = new Date(b.startDateTime).getTime();
+            const endA = new Date(a.endDateTime).getTime();
+            const endB = new Date(b.endDateTime).getTime();
+
+            if (activeTab === "current") {
+                const isOngoingA = startA <= now && endA >= now;
+                const isOngoingB = startB <= now && endB >= now;
+
+                if (isOngoingA && !isOngoingB) return -1;
+                if (!isOngoingA && isOngoingB) return 1;
+
+                return startA - startB;
             } else {
-                return timeB - timeA;
+                return startB - startA;
             }
         });
 
@@ -196,14 +174,14 @@ function SideBarEvents({
                     <p className="font-medium text-slate-500">
                         {searchTerm
                             ? "No matching events"
-                            : activeTab === "upcoming"
-                              ? "No upcoming events"
+                            : activeTab === "current"
+                              ? "No current or upcoming events"
                               : "No past events"}
                     </p>
                     <p className="text-[11px] text-slate-400">
                         {searchTerm
                             ? "Try adjusting your search terms"
-                            : activeTab === "upcoming"
+                            : activeTab === "current"
                               ? "Schedule a new event above"
                               : "Past events will appear here"}
                     </p>
@@ -233,7 +211,9 @@ function EventCard({ event }: { event: CalendarEvent }) {
 
     const startDate = new Date(event.startDateTime);
     const endDate = new Date(event.endDateTime);
-    const isPast = endDate < new Date();
+    const now = Date.now();
+    const isOngoing = startDate.getTime() <= now && endDate.getTime() >= now;
+    const isPast = endDate.getTime() < now;
 
     return (
         <li
@@ -262,9 +242,17 @@ function EventCard({ event }: { event: CalendarEvent }) {
                     href={"#" + event.id}
                     className="before:inset-0 before:absolute"
                 ></a>
-                <time dateTime={format(startDate, "yyyy-MM-dd")}>
-                    {format(startDate, "EEE, MMM dd y")}
-                </time>
+                <div className="flex items-center justify-between">
+                    <time dateTime={format(startDate, "yyyy-MM-dd")}>
+                        {format(startDate, "EEE, MMM dd y")}
+                    </time>
+                    {isOngoing && (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">
+                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live
+                        </span>
+                    )}
+                </div>
                 <p className="text-(--category-text-name) font-medium">{event.title}</p>
                 <span className="mt-0.5 text-xs">
                     <time dateTime={startDate.toLocaleTimeString()}>
