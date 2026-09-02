@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { useEventStore } from "./useEventStore";
 
-// Play a subtle notification chime using Web Audio API
+// Play a pleasant notification chime using Web Audio API
 function playChime() {
     try {
         const AudioContextClass =
@@ -12,8 +12,11 @@ function playChime() {
         if (!AudioContextClass) return;
 
         const ctx = new AudioContextClass();
-        const now = ctx.currentTime;
+        if (ctx.state === "suspended") {
+            ctx.resume().catch(() => {});
+        }
 
+        const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -21,22 +24,22 @@ function playChime() {
         osc.frequency.setValueAtTime(587.33, now); // D5
         osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
 
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
 
         osc.start(now);
-        osc.stop(now + 0.35);
+        osc.stop(now + 0.4);
     } catch {
-        // Audio playback error or blocked by browser policy
+        // Blocked by policy or not supported
     }
 }
 
-const NOTIFIED_STORAGE_KEY = "calendar_notified_event_ids";
+const NOTIFIED_STORAGE_KEY = "calendar_notified_event_keys";
 
-function getNotifiedIds(): Set<string> {
+function getNotifiedKeys(): Set<string> {
     try {
         const raw = sessionStorage.getItem(NOTIFIED_STORAGE_KEY);
         if (raw) {
@@ -48,10 +51,10 @@ function getNotifiedIds(): Set<string> {
     return new Set();
 }
 
-function saveNotifiedId(id: string) {
+function saveNotifiedKey(key: string) {
     try {
-        const set = getNotifiedIds();
-        set.add(id);
+        const set = getNotifiedKeys();
+        set.add(key);
         sessionStorage.setItem(
             NOTIFIED_STORAGE_KEY,
             JSON.stringify(Array.from(set)),
@@ -61,11 +64,19 @@ function saveNotifiedId(id: string) {
     }
 }
 
+export type InAppToast = {
+    id: string;
+    title: string;
+    time: string;
+    description?: string | null;
+};
+
 export function useEventNotifications() {
     const isSupported = typeof window !== "undefined" && "Notification" in window;
     const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
         () => (isSupported ? Notification.permission : "unsupported"),
     );
+    const [activeToast, setActiveToast] = useState<InAppToast | null>(null);
 
     const { events } = useEventStore();
     const timeoutsRef = useRef<Map<string, number>>(new Map());
@@ -75,56 +86,89 @@ export function useEventNotifications() {
         try {
             const res = await Notification.requestPermission();
             setPermission(res);
+            console.log("[Notifications] Permission status:", res);
             return res;
-        } catch {
+        } catch (err) {
+            console.error("[Notifications] Permission error:", err);
             return "denied";
         }
     }, [isSupported]);
 
     // Send notification for an event
     const triggerNotification = useCallback(
-        async (event: { id: string; title: string; startDateTime: Date; description?: string | null; category?: string }) => {
-            if (!isSupported || Notification.permission !== "granted") return;
+        (event: {
+            id: string;
+            title: string;
+            startDateTime: Date;
+            endDateTime: Date;
+            description?: string | null;
+            category?: string;
+        }) => {
+            const startTime = new Date(event.startDateTime).getTime();
+            const notificationKey = `${event.id}_${startTime}`;
 
-            saveNotifiedId(event.id);
+            saveNotifiedKey(notificationKey);
             playChime();
 
-            const timeStr = format(new Date(event.startDateTime), "p");
+            const timeStr = `${format(new Date(event.startDateTime), "p")} - ${format(new Date(event.endDateTime), "p")}`;
             const body = event.description
-                ? `${timeStr} • ${event.description}`
+                ? `${timeStr}\n${event.description}`
                 : `${timeStr} • ${event.category || "Scheduled event"}`;
+
+            // Show in-app visual toast
+            setActiveToast({
+                id: event.id,
+                title: event.title,
+                time: timeStr,
+                description: event.description,
+            });
+
+            const currentPerm = typeof window !== "undefined" && "Notification" in window
+                ? Notification.permission
+                : "denied";
+
+            if (currentPerm !== "granted") {
+                console.log("[Notifications] In-app alert shown (Desktop permission not granted yet):", event.title);
+                return;
+            }
 
             const options: NotificationOptions = {
                 body,
                 icon: "/pwa-192x192.png",
                 badge: "/favicon.svg",
                 tag: `event-${event.id}`,
-                data: { eventId: event.id },
+                requireInteraction: true,
             };
 
+            console.log("[Notifications] Dispatching system notification:", event.title, options);
+
+            // 1. Try direct Window Notification first (synchronous & never hangs)
             try {
-                if ("serviceWorker" in navigator) {
-                    const registration = await navigator.serviceWorker.ready;
-                    if (registration && registration.showNotification) {
-                        await registration.showNotification(event.title, options);
-                        return;
-                    }
-                }
                 new Notification(event.title, options);
-            } catch {
-                try {
-                    new Notification(event.title, options);
-                } catch {
-                    // Notification blocked or failed
-                }
+            } catch (err) {
+                console.warn("[Notifications] Direct Notification failed, trying Service Worker:", err);
+            }
+
+            // 2. Also try Service Worker if active (for mobile / PWA background)
+            if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready
+                    .then((reg) => {
+                        if (reg && reg.showNotification) {
+                            reg.showNotification(event.title, options).catch(() => {});
+                        }
+                    })
+                    .catch(() => {});
             }
         },
-        [isSupported],
+        [],
     );
 
     // Schedule notifications for upcoming events
     useEffect(() => {
-        if (permission !== "granted") return;
+        const currentPerm = isSupported ? Notification.permission : "unsupported";
+        if (currentPerm !== permission) {
+            setPermission(currentPerm);
+        }
 
         const timeouts = timeoutsRef.current;
 
@@ -132,40 +176,53 @@ export function useEventNotifications() {
         timeouts.forEach((timeoutId) => clearTimeout(timeoutId));
         timeouts.clear();
 
-        const notified = getNotifiedIds();
-        const now = Date.now();
+        const checkAndScheduleEvents = () => {
+            const notifiedKeys = getNotifiedKeys();
+            const now = Date.now();
 
-        events.forEach((event) => {
-            if (notified.has(event.id)) return;
+            events.forEach((event) => {
+                const startTime = new Date(event.startDateTime).getTime();
+                const notificationKey = `${event.id}_${startTime}`;
 
-            const startTime = new Date(event.startDateTime).getTime();
-            const delay = startTime - now;
+                if (notifiedKeys.has(notificationKey)) return;
 
-            // Trigger if within the next 24 hours, or if within past 30 seconds (just started)
-            if (delay >= -30000 && delay <= 24 * 60 * 60 * 1000) {
-                if (delay <= 0) {
-                    // Trigger immediately
-                    triggerNotification(event);
-                } else {
-                    // Schedule timer
-                    const timerId = window.setTimeout(() => {
+                const delay = startTime - now;
+
+                // If event starts within the next 24 hours, or if it just started within the last 60 seconds
+                if (delay >= -60000 && delay <= 24 * 60 * 60 * 1000) {
+                    if (delay <= 1500) {
+                        // Trigger now!
                         triggerNotification(event);
-                        timeouts.delete(event.id);
-                    }, delay);
-                    timeouts.set(event.id, timerId);
+                    } else if (!timeouts.has(notificationKey)) {
+                        // Schedule timer
+                        const timerId = window.setTimeout(() => {
+                            triggerNotification(event);
+                            timeouts.delete(notificationKey);
+                        }, delay);
+                        timeouts.set(notificationKey, timerId);
+                    }
                 }
-            }
-        });
+            });
+        };
+
+        // Run immediately
+        checkAndScheduleEvents();
+
+        // Also run periodic 5-second interval check to safeguard against tab throttling or newly added events
+        const intervalId = window.setInterval(checkAndScheduleEvents, 5000);
 
         return () => {
             timeouts.forEach((timeoutId) => clearTimeout(timeoutId));
             timeouts.clear();
+            clearInterval(intervalId);
         };
-    }, [events, permission, triggerNotification]);
+    }, [events, permission, isSupported, triggerNotification]);
 
     return {
         permission,
         isSupported,
         requestPermission,
+        activeToast,
+        dismissToast: () => setActiveToast(null),
     };
 }

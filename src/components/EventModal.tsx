@@ -155,6 +155,14 @@ export default function EventModal({
 
         console.log("Event data:", eventData);
         try {
+            if (
+                typeof window !== "undefined" &&
+                "Notification" in window &&
+                Notification.permission === "default"
+            ) {
+                Notification.requestPermission().catch(() => {});
+            }
+
             if (eventData.id) {
                 await EventStore.updateEvent(eventData);
             } else {

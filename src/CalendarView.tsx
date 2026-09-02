@@ -10,9 +10,11 @@ import { useDialog } from "./hooks/useDialog";
 import { useRouter } from "./router/useRouter";
 import { useUrlSearchParam } from "./router/hooks";
 import { useEventNotifications } from "./hooks/useEventNotifications";
+import { NotificationBanner } from "./components/NotificationBanner";
+import { NotificationToast } from "./components/NotificationToast";
 
 const CalendarView = () => {
-    useEventNotifications();
+    const { activeToast, dismissToast } = useEventNotifications();
     const {
         currentDate,
         setCurrentDate,
@@ -45,7 +47,10 @@ const CalendarView = () => {
     }, []);
 
     return (
-        <div className="flex max-h-screen max-[850px]:w-max">
+        <div className="flex flex-col min-h-screen w-full">
+            <NotificationBanner />
+            <NotificationToast toast={activeToast} onDismiss={dismissToast} />
+            <div className="flex max-h-screen max-[850px]:w-max flex-1">
             <div className="w-full px-4 basis-full">
                 <div className="flex items-center justify-between py-5 pl-6 pr-1 gap-12">
                     <div className="flex items-center gap-6">
@@ -210,6 +215,7 @@ const CalendarView = () => {
             </div>
             <CalendarSidebar sideViewIsOpen={sideViewIsOpen} />
         </div>
+    </div>
     );
 };
 

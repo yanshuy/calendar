@@ -224,8 +224,12 @@ function EventCard({ event }: { event: CalendarEvent }) {
         >
             <div
                 data-category={event.category}
-                className={`block p-3 relative group focus-within:bg-(--category-bg-hover) focus-within:text-(--category-text-hover) hover:bg-(--category-bg-hover) hover:text-(--category-text-hover) bg-(--category-bg-light) text-(--category-text) transition-colors duration-200 h-full w-full rounded-xl focus:outline-none focus:focus-visible:ring focus:ring-slate-900 focus:ring-offset-2 ${
-                    isPast ? "opacity-85" : ""
+                className={`block p-3 relative group focus-within:bg-(--category-bg-hover) focus-within:text-(--category-text-hover) hover:bg-(--category-bg-hover) hover:text-(--category-text-hover) bg-(--category-bg-light) text-(--category-text) transition-all duration-200 h-full w-full rounded-xl focus:outline-none focus:focus-visible:ring focus:ring-slate-900 focus:ring-offset-2 ${
+                    isOngoing
+                        ? "ring-2 ring-inset ring-[#165DFC] shadow-xs"
+                        : isPast
+                          ? "opacity-85"
+                          : ""
                 }`}
                 onClick={(e) => {
                     e.preventDefault();
@@ -242,17 +246,9 @@ function EventCard({ event }: { event: CalendarEvent }) {
                     href={"#" + event.id}
                     className="before:inset-0 before:absolute"
                 ></a>
-                <div className="flex items-center justify-between">
-                    <time dateTime={format(startDate, "yyyy-MM-dd")}>
-                        {format(startDate, "EEE, MMM dd y")}
-                    </time>
-                    {isOngoing && (
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">
-                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live
-                        </span>
-                    )}
-                </div>
+                <time dateTime={format(startDate, "yyyy-MM-dd")}>
+                    {format(startDate, "EEE, MMM dd y")}
+                </time>
                 <p className="text-(--category-text-name) font-medium">{event.title}</p>
                 <span className="mt-0.5 text-xs">
                     <time dateTime={startDate.toLocaleTimeString()}>
