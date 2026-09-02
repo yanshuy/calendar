@@ -1,7 +1,5 @@
 import {
     add,
-    differenceInHours,
-    differenceInMinutes,
     endOfDay,
     format,
     interval,
@@ -9,9 +7,14 @@ import {
     isWithinInterval,
     startOfToday,
 } from "date-fns";
-import { useMemo } from "react";
+import { useEffect } from "react";
 import EventSticker from "./components/EventSticker";
-import { useEventStore } from "./context/useEventStore";
+import { observer } from "./utils/intersectionObserver";
+import { useRouter } from "./router/useRouter";
+import { flushSync } from "react-dom";
+import { useUrlHash } from "./router/hooks";
+import { EventStore } from "./store/EventStore";
+import { useEventStore } from "./hooks/useEventStore";
 
 const TimeSlotsWidth = "75px";
 const CellsHeight = "120px";
@@ -23,18 +26,17 @@ type DaysViewProps = {
 
 const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
     const today = startOfToday();
-
     const currentHour = new Date().getHours();
 
     return (
         <>
-            <div className="overflow-clip rounded-t-2xl border border-slate-200 bg-slate-50 min-w-[799px]">
+            <div className={`overflow-clip rounded-t-2xl border border-slate-200 bg-slate-50 flex flex-col h-[calc(100vh-6.5rem)] md:h-[calc(100vh-5.5rem)] ${days.length === 1 ? "w-full min-w-0" : "min-w-[650px] md:min-w-[799px]"}`}>
                 <div
                     style={{
                         display: "grid",
                         gridTemplateColumns: `${TimeSlotsWidth} repeat(${days.length}, 1fr)`,
                     }}
-                    className="sticky top-0 z-10 border-b border-gray-200 bg-slate-50 py-2"
+                    className="sticky top-0 z-10 border-b border-gray-200 bg-slate-50 py-2 shrink-0"
                 >
                     <div></div>
                     {/* DayCells  */}
@@ -43,11 +45,15 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                             key={format(day, "yyyy-MM-dd")}
                             className="flex items-center justify-center p-2 text-slate-400"
                         >
-                            {days.length == 1 ? format(day, "EEEE") : format(day, "EEE")}
+                            {days.length == 1
+                                ? format(day, "EEEE")
+                                : format(day, "EEE")}
                             <time
                                 dateTime={format(day, "yyyy-MM-dd")}
                                 className={`${
-                                    isSameDay(day, today) ? "ml-1 bg-blue-600 text-white" : "text-slate-700"
+                                    isSameDay(day, today)
+                                        ? "ml-1 bg-blue-600 text-white"
+                                        : "text-slate-700"
                                 } flex size-7 items-center justify-center rounded-[50%]`}
                             >
                                 {format(day, "dd")}
@@ -68,9 +74,8 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                         overscrollBehavior: "contain",
                         scrollBehavior: "smooth",
                         scrollPadding: "2.5rem",
-                        height: "calc(100vh - 8.725rem)",
                     }}
-                    className="scroller"
+                    className="scroller flex-1 min-h-0"
                 >
                     <div
                         style={{
@@ -124,7 +129,10 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                             </time>
                         ))}
                     </div>
-                    <div style={{ gridArea: "buffer", height: "23px" }} className="grid grid-flow-col">
+                    <div
+                        style={{ gridArea: "buffer", height: "23px" }}
+                        className="grid grid-flow-col"
+                    >
                         {Array(days.length)
                             .fill(0)
                             .map((_, index) => (
@@ -133,7 +141,11 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                                     className="relative h-full border-b border-l border-slate-200 bg-slate-100/90"
                                 >
                                     <span className="absolute h-full w-full">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="100%"
+                                            height="100%"
+                                        >
                                             <defs>
                                                 <pattern
                                                     id="pattern_LotO"
@@ -152,7 +164,12 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                                                     />
                                                 </pattern>
                                             </defs>
-                                            <rect width="100%" height="100%" fill="url(#pattern_LotO)" opacity="1" />
+                                            <rect
+                                                width="100%"
+                                                height="100%"
+                                                fill="url(#pattern_LotO)"
+                                                opacity="1"
+                                            />
                                         </svg>
                                     </span>
                                 </div>
@@ -168,7 +185,6 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
                         }}
                     >
                         <RenderCells days={days} />
-
                         <EventsRenderer days={days} />
                     </div>
                 </div>
@@ -179,14 +195,35 @@ const DaysView = ({ days, currentHourRef }: DaysViewProps) => {
 
 export default DaysView;
 
-const EventsRenderer = ({ days }: { days: Date[] }) => {
-    const currentDays = interval(days[0], endOfDay(days[days.length - 1]));
+export const EventsRenderer = ({ days }: { days: Date[] }) => {
+    const [hash] = useUrlHash();
+    const { setCurrentDate } = useRouter();
 
+    useEffect(() => {
+        async function handleHashChange() {
+            const eventId = hash.substring(1);
+            if (!eventId) return;
+
+            const event = await EventStore.q.getById(eventId);
+            if (!event) return;
+
+            const eventDate = event.startDateTime;
+            flushSync(() => setCurrentDate(eventDate));
+
+            const element = document.getElementById(eventId);
+            element?.scrollIntoView({ behavior: "smooth" });
+            if (element) observer.observe(element);
+        }
+
+        handleHashChange();
+    }, [hash, setCurrentDate]);
+
+    const currentDays = interval(days[0], endOfDay(days[days.length - 1]));
     const { events } = useEventStore();
-    const currentDaysEvents = useMemo(
-        () => events.filter((event) => isWithinInterval(event.startDateTime, currentDays)),
-        [events, currentDays]
+    const currentDaysEvents = events.filter((event) =>
+        isWithinInterval(event.startDateTime, currentDays),
     );
+
     return (
         <>
             {currentDaysEvents.map((event) => (
@@ -208,237 +245,110 @@ const StripedBackground = () => {
                         height="15"
                         patternTransform="rotate(45)"
                     >
-                        <line x1="0" y="0" x2="0" y2="15" stroke="#94A3B8" strokeWidth="2" />
+                        <line
+                            x1="0"
+                            y="0"
+                            x2="0"
+                            y2="15"
+                            stroke="#94A3B8"
+                            strokeWidth="2"
+                        />
                     </pattern>
                 </defs>
-                <rect width="100%" height="100%" fill="url(#pattern_LotO)" opacity="1" />
+                <rect
+                    width="100%"
+                    height="100%"
+                    fill="url(#pattern_LotO)"
+                    opacity="1"
+                />
             </svg>
         </span>
     );
 };
 
 function RenderCells({ days }: { days: Date[] }) {
-    const totalHours = days.length * 24;
-    const pastHours = Math.min(Math.max(0, differenceInHours(new Date(), days[0])), totalHours - 1);
-    const futureHours = totalHours - Math.min(totalHours, pastHours + 1);
-
-    const cellHoverColor = "hover:bg-blue-100/50";
+    const now = new Date();
+    const cellHoverColor = "hover:bg-blue-100/50 cursor-pointer";
 
     return (
         <>
-            {Array(pastHours)
-                .fill(0)
-                .map((_, index) => {
+            {days.flatMap((day) => {
+                const year = day.getFullYear();
+                const month = day.getMonth();
+                const date = day.getDate();
+
+                return Array.from({ length: 24 }, (_, hour) => {
+                    const slotMid = new Date(year, month, date, hour, 30, 0);
+                    const slotEnd = new Date(year, month, date, hour + 1, 0, 0);
+
+                    const isFirstHalfPast = slotMid <= now;
+                    const isSecondHalfPast = slotEnd <= now;
+
+                    const time00 = format(
+                        new Date(year, month, date, hour, 0, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+                    const time15 = format(
+                        new Date(year, month, date, hour, 15, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+                    const time30 = format(
+                        new Date(year, month, date, hour, 30, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+                    const time45 = format(
+                        new Date(year, month, date, hour, 45, 0),
+                        "yyyy-MM-dd'T'HH:mm:ss",
+                    );
+
                     return (
                         <div
-                            key={add(days[0], {
-                                hours: index,
-                            }).toISOString()}
+                            key={`${year}-${month}-${date}-${hour}`}
                             className="grid h-full grid-rows-2 border-b border-l border-slate-200"
                         >
-                            <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
-                                <StripedBackground />
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 0,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 15,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                            </div>
-                            <div className="relative grid grid-rows-2 bg-slate-100/90">
-                                <StripedBackground />
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 30,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                                <span
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index,
-                                            minutes: 45,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                            </div>
+                            {/* First half-hour (0-30 min) */}
+                            {isFirstHalfPast ? (
+                                <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
+                                    <StripedBackground />
+                                    <span data-time={time00}></span>
+                                    <span data-time={time15}></span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-rows-2 border-b border-dashed border-slate-200">
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time00}
+                                    ></span>
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time15}
+                                    ></span>
+                                </div>
+                            )}
+
+                            {/* Second half-hour (30-60 min) */}
+                            {isSecondHalfPast ? (
+                                <div className="relative grid grid-rows-2 bg-slate-100/90">
+                                    <StripedBackground />
+                                    <span data-time={time30}></span>
+                                    <span data-time={time45}></span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-rows-2">
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time30}
+                                    ></span>
+                                    <span
+                                        className={cellHoverColor}
+                                        data-time={time45}
+                                    ></span>
+                                </div>
+                            )}
                         </div>
                     );
-                })}
-
-            <div
-                key={add(days[0], {
-                    hours: pastHours,
-                }).toISOString()}
-                className="grid h-full grid-rows-2 border-b border-l border-slate-200"
-            >
-                {differenceInMinutes(new Date(), add(days[0], { hours: pastHours })) >= 30 ? (
-                    <div className="relative grid grid-rows-2 bg-slate-100/90 border-b border-dashed border-slate-200">
-                        <StripedBackground />
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 0,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 15,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                    </div>
-                ) : (
-                    <div className="grid grid-rows-2 border-b border-dashed border-slate-200">
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 0,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 15,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                    </div>
-                )}
-                {differenceInMinutes(new Date(), add(days[0], { hours: pastHours })) >= 60 ? (
-                    <div className="relative grid grid-rows-2 bg-slate-100/90">
-                        <StripedBackground />
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 0,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                        <span
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 15,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                    </div>
-                ) : (
-                    <div className="grid grid-rows-2">
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 30,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                        <span
-                            className={cellHoverColor}
-                            data-time={format(
-                                add(days[0], {
-                                    hours: pastHours,
-                                    minutes: 45,
-                                }),
-                                "yyyy-MM-dd'T'HH:mm:ss"
-                            )}
-                        ></span>
-                    </div>
-                )}
-            </div>
-
-            {Array(futureHours)
-                .fill(0)
-                .map((_, index) => {
-                    return (
-                        <div
-                            key={add(days[0], {
-                                hours: index + pastHours + 1,
-                            }).toISOString()}
-                            className="grid h-full grid-rows-2 border-b border-l border-slate-200"
-                        >
-                            <div className="grid grid-rows-2 border-b border-dashed border-slate-200">
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 0,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 15,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                            </div>
-                            <div className="grid grid-rows-2">
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 30,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                                <span
-                                    className={cellHoverColor}
-                                    data-time={format(
-                                        add(days[0], {
-                                            hours: index + pastHours + 1,
-                                            minutes: 45,
-                                        }),
-                                        "yyyy-MM-dd'T'HH:mm:ss"
-                                    )}
-                                ></span>
-                            </div>
-                        </div>
-                    );
-                })}
+                });
+            })}
         </>
     );
 }

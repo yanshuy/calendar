@@ -1,5 +1,7 @@
-import { endOfDay, format, interval, isWithinInterval, startOfDay } from "date-fns";
-import { CalendarEvent } from "../utils/types";
+import { format } from "date-fns";
+import { CalendarEvent } from "../store/EventStore";
+import { useTimezone } from "../context/TimezoneContext";
+import { getZonedEventDates } from "../utils/timezone";
 
 type EventStickersProps = {
     days: Date[];
@@ -7,29 +9,40 @@ type EventStickersProps = {
 };
 
 const EventSticker = ({ days, event }: EventStickersProps) => {
+    const { timezone } = useTimezone();
+    const { startDate, endDate } = getZonedEventDates(event, timezone);
+
     const startColNo =
-        days.findIndex((day) => isWithinInterval(event.endDateTime, interval(startOfDay(day), endOfDay(day)))) + 1;
+        days.findIndex(
+            (day) =>
+                startDate.getFullYear() === day.getFullYear() &&
+                startDate.getMonth() === day.getMonth() &&
+                startDate.getDate() === day.getDate(),
+        ) + 1;
 
-    const top =
-        ((new Date(event.startDateTime).getTime() - startOfDay(new Date(event.startDateTime)).getTime()) * 2) /
-        1000 /
-        60;
+    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+    const top = startMinutes * 2;
 
-    const height = ((new Date(event.endDateTime).getTime() - new Date(event.startDateTime).getTime()) * 2) / (1000 * 60);
-    const scheduledTime = `${format(event.startDateTime, "h:mm")} to ${format(event.endDateTime, "h:mm")}`;
+    const durationMinutes = Math.max(
+        15,
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60),
+    );
+    const height = durationMinutes * 2;
+
+    const scheduledTime = `${format(startDate, "h:mm a")} to ${format(endDate, "h:mm a")}`;
 
     return (
         <>
             <div
-                id={event.id}
+                id={event.id + ""}
                 style={{
                     top: `${top}px`,
                     height: `${height}px`,
                     gridColumnStart: startColNo,
                     gridColumnEnd: startColNo + 1,
                 }}
-                key={event.startDateTime}
-                data-time={event.startDateTime}
+                key={event.startDateTime.toString()}
+                data-time={event.startDateTime.toString()}
                 className="absolute w-full bg-transparent p-[0.15rem] sticker"
             >
                 <div
@@ -43,11 +56,16 @@ const EventSticker = ({ days, event }: EventStickersProps) => {
                         ${height > 45 ? "p-2" : ""}
                     `}
                 >
-                    <p className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}>
-                        {event.name}
+                    <p
+                        className={`text-(--category-text-name) text-sm ${height > 60 ? "" : "truncate"}`}
+                    >
+                        {event.title}
                     </p>
                     {height >= 60 && (
-                        <time className="truncate text-sm" dateTime={scheduledTime}>
+                        <time
+                            className="truncate text-sm"
+                            dateTime={scheduledTime}
+                        >
                             {scheduledTime}
                         </time>
                     )}

@@ -1,9 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 import { useDialog } from "../hooks/useDialog";
 import EventModal from "../components/EventModal";
-import { CalendarEvent } from "../utils/types";
-import { add, format } from "date-fns";
-import { useIndexedDB } from "../hooks/useIndexedDB";
+import { add } from "date-fns";
+import { CalendarEvent, EventStore } from "../store/EventStore";
 
 interface EventModalContextType {
     isOpen: boolean;
@@ -11,26 +16,32 @@ interface EventModalContextType {
     closeModal: () => void;
 }
 
-const EventModalContext = createContext<EventModalContextType | undefined>(undefined);
+const EventModalContext = createContext<EventModalContextType | undefined>(
+    undefined,
+);
 
-export const EventModalProvider = ({ children }: { children: React.ReactNode }) => {
+export const EventModalProvider = ({
+    children,
+}: {
+    children: React.ReactNode;
+}) => {
     const [isOpen, setIsOpen, dialogRef] = useDialog(false);
-    const [currentEvent, setCurrentEvent] = useState<Partial<CalendarEvent>>({});
+    const [currentEvent, setCurrentEvent] = useState<Partial<CalendarEvent>>(
+        {},
+    );
 
     const openModal = useCallback(
         (event?: Partial<CalendarEvent>) => {
             setCurrentEvent(event ?? {});
             setIsOpen(true);
         },
-        [setCurrentEvent, setIsOpen]
+        [setCurrentEvent, setIsOpen],
     );
 
     function closeModal() {
         setIsOpen(false);
-        setCurrentEvent({});
+        // setCurrentEvent({});
     }
-
-    const { getByKey } = useIndexedDB("calendar-events");
 
     useEffect(() => {
         const clickHandler = async (e: Event) => {
@@ -38,21 +49,18 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
                 const elem = e.target as HTMLElement;
 
                 if (elem.id) {
-                    openModal();
-                    const event = await getByKey(elem.id);
-                    if (event) setCurrentEvent(event);
+                    const event = await EventStore.q.getById(elem.id);
+                    if (event) openModal(event);
                     return;
                 }
 
                 const { time } = elem.dataset;
-
                 if (!time) return;
-
                 const date = new Date(time);
 
                 openModal({
-                    startDateTime: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
-                    endDateTime: format(add(date, { minutes: 15 }), "yyyy-MM-dd'T'HH:mm:ss"),
+                    startDateTime: date,
+                    endDateTime: add(date, { minutes: 15 }),
                 });
             }
         };
@@ -62,7 +70,7 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
         return () => {
             document.removeEventListener("click", clickHandler);
         };
-    }, [getByKey, openModal]);
+    }, [openModal]);
 
     return (
         <EventModalContext.Provider
@@ -73,7 +81,12 @@ export const EventModalProvider = ({ children }: { children: React.ReactNode }) 
             }}
         >
             {children}
-            <EventModal event={currentEvent} isOpen={isOpen} closeModal={closeModal} dialogRef={dialogRef} />
+            <EventModal
+                event={currentEvent}
+                isOpen={isOpen}
+                closeModal={closeModal}
+                dialogRef={dialogRef}
+            />
         </EventModalContext.Provider>
     );
 };
